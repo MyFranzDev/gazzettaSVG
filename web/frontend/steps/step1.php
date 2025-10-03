@@ -12,9 +12,24 @@
 
         <div class="form-group">
             <label for="prezzo">Prezzo *</label>
-            <input type="text" id="prezzo" name="data[prezzo]"
-                   value="<?= htmlspecialchars($wizardData['prezzo'] ?? '0,99€ / mese') ?>"
-                   placeholder="es. 0,99€ / mese" required>
+            <p style="font-size: 13px; color: #666; margin-bottom: 10px;">Inserisci il prezzo e la periodicità separatamente</p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div>
+                    <label for="prezzo" style="font-size: 13px; color: #555; margin-bottom: 5px; display: block;">Prezzo</label>
+                    <input type="text" id="prezzo" name="data[prezzo]"
+                           value="<?= htmlspecialchars($wizardData['prezzo'] ?? '0,99€') ?>"
+                           placeholder="es. 0,99€" required
+                           style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+                </div>
+                <div>
+                    <label for="periodicita" style="font-size: 13px; color: #555; margin-bottom: 5px; display: block;">Periodicità</label>
+                    <input type="text" id="periodicita" name="data[periodicita]"
+                           value="<?= htmlspecialchars($wizardData['periodicita'] ?? '/mese') ?>"
+                           placeholder="es. /mese, /anno"
+                           style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+                    <small style="font-size: 11px; color: #999; margin-top: 3px; display: block;">Lascia vuoto se non applicabile</small>
+                </div>
+            </div>
         </div>
 
         <div class="form-group">
