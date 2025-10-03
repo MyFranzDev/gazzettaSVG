@@ -20,19 +20,30 @@ class TemplateEngine:
     def load_fonts(self):
         """Load and encode fonts as base64"""
         font_files = {
-            "Oswald-Bold": "Oswald-Bold.woff2",
-            "Roboto-Regular": "Roboto-Regular.woff2",
-            "Roboto-Bold": "Roboto-Bold.woff2"
+            "Oswald-Bold": ["Oswald-Bold.woff2", "Oswald-Bold.ttf"],
+            "Oswald-BoldItalic": ["Oswald-BoldItalic.woff2", "Oswald-BoldItalic.ttf", "Oswald HeavyItalic 800.ttf"],
+            "Roboto-Regular": ["Roboto-Regular.woff2", "Roboto-Regular.ttf"],
+            "Roboto-Bold": ["Roboto-Bold.woff2", "Roboto-Bold.ttf"],
+            "Roboto-BoldItalic": ["Roboto-BoldItalic.woff2", "Roboto-BoldItalic.ttf"]
         }
 
-        for name, filename in font_files.items():
-            try:
-                path = os.path.join("font", filename)
-                with open(path, "rb") as f:
-                    b64 = base64.b64encode(f.read()).decode("utf-8")
-                    self.fonts[name] = f"data:font/woff2;base64,{b64}"
-            except FileNotFoundError:
-                print(f"⚠️ Font {filename} not found, using system fallback")
+        for name, filenames in font_files.items():
+            loaded = False
+            for filename in filenames:
+                try:
+                    path = os.path.join("font", filename)
+                    with open(path, "rb") as f:
+                        b64 = base64.b64encode(f.read()).decode("utf-8")
+                        # Determine format from extension
+                        font_format = "woff2" if filename.endswith(".woff2") else "truetype"
+                        self.fonts[name] = f"data:font/{font_format};base64,{b64}"
+                        loaded = True
+                        break
+                except FileNotFoundError:
+                    continue
+
+            if not loaded:
+                print(f"⚠️ Font {name} not found (tried {', '.join(filenames)}), using system fallback")
                 self.fonts[name] = None
 
     def set_content_data(self, data: Dict[str, Any]):
@@ -72,12 +83,14 @@ class TemplateEngine:
 
         for name, data_uri in self.fonts.items():
             if data_uri:
-                font_family = name.replace("-", " ")
+                font_family = name.replace("-", " ").replace("BoldItalic", "Bold").replace("Italic", "")
                 weight = "bold" if "Bold" in name else "normal"
+                style = "italic" if "Italic" in name else "normal"
                 defs.append(f'''
                 @font-face {{
                     font-family: '{font_family}';
                     font-weight: {weight};
+                    font-style: {style};
                     src: url('{data_uri}') format('woff2');
                 }}''')
 
@@ -112,6 +125,8 @@ class TemplateEngine:
             return self._render_logo(comp, canvas_width, canvas_height)
         elif comp_type == "bullet_list":
             return self._render_bullet_list(comp, canvas_width, canvas_height)
+        elif comp_type == "price_display":
+            return self._render_price_display(comp, canvas_width, canvas_height)
 
         return ""
 
@@ -140,41 +155,144 @@ class TemplateEngine:
         return self.content_data.get(source, "")
 
     def _render_background_layer(self, comp: Dict, canvas_width: int, canvas_height: int) -> str:
-        """Render a colored background layer"""
+        """Render a colored background layer or background image"""
         geom = self._get_geometry(comp, canvas_width, canvas_height)
         style = comp.get("style", {})
-
-        fill = style.get("background", "#223047")
-        opacity = style.get("opacity", 1)
-
-        return f'<rect x="{geom["x"]}" y="{geom["y"]}" width="{geom["width"]}" height="{geom["height"]}" fill="{fill}" opacity="{opacity}"/>'
-
-    def _render_text_block(self, comp: Dict, canvas_width: int, canvas_height: int) -> str:
-        """Render text block with background"""
-        geom = self._get_geometry(comp, canvas_width, canvas_height)
-        style = comp.get("style", {})
-        content_source = comp.get("content_source", "")
-
-        text_content = self._get_content(content_source)
 
         parts = []
 
-        # Background
-        bg_color = style.get("background", self.background.get("main_color", "#223047"))
-        parts.append(f'<rect x="{geom["x"]}" y="{geom["y"]}" width="{geom["width"]}" height="{geom["height"]}" fill="{bg_color}"/>')
+        # Check if this component should use the background image
+        use_bg_image = style.get("use_background_image", False)
 
-        # Text
+        if use_bg_image and self.background.get("image_data"):
+            # Render background image clipped to this area
+            clip_id = f"clip-{comp.get('id', 'bg')}"
+            parts.append(f'<defs><clipPath id="{clip_id}"><rect x="{geom["x"]}" y="{geom["y"]}" width="{geom["width"]}" height="{geom["height"]}"/></clipPath></defs>')
+            parts.append(f'<image href="data:image/png;base64,{self.background["image_data"]}" x="{geom["x"]}" y="{geom["y"]}" width="{geom["width"]}" height="{geom["height"]}" preserveAspectRatio="xMidYMid slice" clip-path="url(#{clip_id})"/>')
+        else:
+            # Render solid color
+            fill = style.get("background", self.background.get("color", "#223047"))
+            opacity = style.get("opacity", 1)
+            parts.append(f'<rect x="{geom["x"]}" y="{geom["y"]}" width="{geom["width"]}" height="{geom["height"]}" fill="{fill}" opacity="{opacity}"/>')
+
+        return '\n'.join(parts)
+
+    def _render_text_block(self, comp: Dict, canvas_width: int, canvas_height: int) -> str:
+        """Render text block with optional header and main text (both auto-sized to fill space)"""
+        geom = self._get_geometry(comp, canvas_width, canvas_height)
+        style = comp.get("style", {})
+
+        # Get header and main content
+        header_source = comp.get("header_source", "")
+        content_source = comp.get("content_source", "")
+
+        header_text = self._get_content(header_source) if header_source else ""
+        main_text = self._get_content(content_source)
+
+        parts = []
+
+        # Optional background
+        if style.get("background"):
+            bg_color = style.get("background")
+            parts.append(f'<rect x="{geom["x"]}" y="{geom["y"]}" width="{geom["width"]}" height="{geom["height"]}" fill="{bg_color}"/>')
+
+        # Text styling
         text_color = style.get("text_color", "#FFFFFF")
-        font_size = style.get("font_size", 20)
-        font_family = style.get("font_family", "Oswald Bold")
         alignment = style.get("alignment", "center")
-
-        # Calculate text position
-        text_x = geom["x"] + geom["width"] / 2 if alignment == "center" else geom["x"] + 10
-        text_y = geom["y"] + geom["height"] / 2 + font_size / 3
         text_anchor = "middle" if alignment == "center" else "start"
 
-        parts.append(f'<text x="{text_x}" y="{text_y}" font-family="{font_family}" font-size="{font_size}" fill="{text_color}" text-anchor="{text_anchor}">{text_content}</text>')
+        # Calculate available space
+        total_height = geom["height"]
+        total_width = geom["width"]
+
+        # If we have both header and main text, split space between them
+        if header_text and main_text:
+            # Allocate space: 40% for header, 60% for main text
+            header_height_alloc = total_height * 0.40
+            main_height_alloc = total_height * 0.60
+
+            # Auto-size both texts to fill their allocated space
+            header_font_family = style.get("header_font_family", "Roboto Bold")
+            main_font_family = style.get("font_family", "Oswald Bold")
+
+            header_font_size = self._calculate_optimal_font_size(
+                header_text,
+                total_width,
+                header_height_alloc,
+                header_font_family,
+                min_size=10,
+                max_size=style.get("max_header_font_size", 30),
+                padding_ratio=0.90
+            )
+
+            main_font_size = self._calculate_optimal_font_size(
+                main_text,
+                total_width,
+                main_height_alloc,
+                main_font_family,
+                min_size=style.get("min_font_size", 18),
+                max_size=style.get("max_font_size", 60),
+                padding_ratio=0.90
+            )
+
+            # Calculate total actual content height with some spacing
+            spacing = 3
+            total_content_height = header_font_size + spacing + main_font_size
+
+            # Center the entire block vertically
+            start_y = geom["y"] + (total_height - total_content_height) / 2
+
+            # Position texts
+            header_y = start_y + header_font_size * 0.85
+            main_y = start_y + header_font_size + spacing + main_font_size * 0.85
+
+        elif header_text:
+            # Only header, use full space
+            header_font_family = style.get("header_font_family", "Roboto Bold")
+            header_font_size = self._calculate_optimal_font_size(
+                header_text,
+                total_width,
+                total_height,
+                header_font_family,
+                min_size=10,
+                max_size=style.get("max_header_font_size", 30),
+                padding_ratio=0.90
+            )
+            header_y = geom["y"] + geom["height"] / 2 + header_font_size / 3
+            main_font_size = 0
+
+        elif main_text:
+            # Only main text, use full space
+            main_font_family = style.get("font_family", "Oswald Bold")
+            main_font_size = self._calculate_optimal_font_size(
+                main_text,
+                total_width,
+                total_height,
+                main_font_family,
+                min_size=style.get("min_font_size", 18),
+                max_size=style.get("max_font_size", 60),
+                padding_ratio=0.90
+            )
+            main_y = geom["y"] + geom["height"] / 2 + main_font_size / 3
+            header_font_size = 0
+
+        else:
+            header_font_size = 0
+            main_font_size = 0
+
+        # Render header
+        if header_text:
+            header_font_family = style.get("header_font_family", "Roboto Bold")
+            header_x = geom["x"] + geom["width"] / 2 if alignment == "center" else geom["x"]
+
+            parts.append(f'<text x="{header_x}" y="{header_y}" font-family="{header_font_family}" font-size="{header_font_size}" fill="{text_color}" text-anchor="{text_anchor}">{header_text}</text>')
+
+        # Main text
+        if main_text:
+            main_font_family = style.get("font_family", "Oswald Bold")
+            main_x = geom["x"] + geom["width"] / 2 if alignment == "center" else geom["x"]
+
+            parts.append(f'<text x="{main_x}" y="{main_y}" font-family="{main_font_family}" font-size="{main_font_size}" fill="{text_color}" text-anchor="{text_anchor}">{main_text}</text>')
 
         return '\n'.join(parts)
 
@@ -189,17 +307,36 @@ class TemplateEngine:
             return ""
 
         text_color = style.get("text_color", "#FFFFFF")
-        font_size = style.get("font_size", 24)
         font_family = style.get("font_family", "Oswald Bold")
         alignment = style.get("alignment", "center")
+
+        # Auto-size text if enabled
+        if style.get("auto_size", False):
+            font_size = self._calculate_optimal_font_size(
+                text_content.replace('\n', ' '),  # Treat as single line for sizing
+                geom["width"],
+                geom["height"],
+                font_family,
+                min_size=style.get("min_font_size", 10),
+                max_size=style.get("max_font_size", 60)
+            )
+        else:
+            font_size = style.get("font_size", 24)
 
         # Handle multiline text
         lines = text_content.split('\n')
 
+        # Calculate total height of multiline text
+        line_height = font_size * 1.2
+        total_height = len(lines) * line_height
+
+        # Calculate starting Y to center the text block vertically
+        start_y = geom["y"] + (geom["height"] - total_height) / 2 + font_size
+
         parts = []
         for i, line in enumerate(lines):
             text_x = geom["x"] + geom["width"] / 2 if alignment == "center" else geom["x"]
-            text_y = geom["y"] + (i + 1) * font_size * 1.2
+            text_y = start_y + i * line_height
             text_anchor = "middle" if alignment == "center" else "start"
 
             parts.append(f'<text x="{text_x}" y="{text_y}" font-family="{font_family}" font-size="{font_size}" fill="{text_color}" text-anchor="{text_anchor}">{line}</text>')
@@ -267,6 +404,38 @@ class TemplateEngine:
 
         return '\n'.join(parts)
 
+    def _calculate_optimal_font_size(self, text: str, available_width: float, available_height: float,
+                                       font_family: str, min_size: int = 10, max_size: int = 60,
+                                       padding_ratio: float = 0.85) -> int:
+        """Calculate optimal font size to fit text in available space
+
+        Uses approximate character width calculation:
+        - Roboto Bold: ~0.6 * font_size per character
+        - Oswald Bold: ~0.55 * font_size per character (condensed)
+
+        Args:
+            padding_ratio: How much of available width to use (0.85 = 15% padding, 0.75 = 25% padding)
+        """
+        if not text:
+            return max_size
+
+        # Character width ratio based on font
+        if "Oswald" in font_family:
+            char_width_ratio = 0.55
+        else:  # Roboto or other fonts
+            char_width_ratio = 0.6
+
+        # Calculate font size based on width constraint
+        # Formula: text_width ≈ len(text) * font_size * char_width_ratio
+        font_size_for_width = int((available_width * padding_ratio) / (len(text) * char_width_ratio))
+
+        # Also consider height constraint (text should be ~80% of height)
+        font_size_for_height = int(available_height * 0.8)
+
+        # Use the smaller of the two, clamped to min/max
+        optimal_size = min(font_size_for_width, font_size_for_height)
+        return max(min_size, min(optimal_size, max_size))
+
     def _render_cta_button(self, comp: Dict, canvas_width: int, canvas_height: int) -> str:
         """Render CTA button"""
         geom = self._get_geometry(comp, canvas_width, canvas_height)
@@ -283,42 +452,154 @@ class TemplateEngine:
 
         parts.append(f'<rect x="{geom["x"]}" y="{geom["y"]}" width="{geom["width"]}" height="{geom["height"]}" rx="{border_radius}" ry="{border_radius}" fill="{bg_color}"/>')
 
-        # Button text
+        # Button text with auto-sizing
         text_color = style.get("text_color", "#000000")
-        font_size = style.get("font_size", 18)
         font_family = style.get("font_family", "Roboto Bold")
+        font_style = style.get("font_style", "normal")  # normal or italic
+
+        # Get base font size or calculate optimal
+        if style.get("auto_size", True):
+            font_size = self._calculate_optimal_font_size(
+                text_content,
+                geom["width"],
+                geom["height"],
+                font_family,
+                min_size=style.get("min_font_size", 10),
+                max_size=style.get("max_font_size", 60),
+                padding_ratio=0.75  # 25% padding for buttons
+            )
+        else:
+            font_size = style.get("font_size", 18)
 
         text_x = geom["x"] + geom["width"] / 2
         text_y = geom["y"] + geom["height"] / 2 + font_size / 3
 
-        parts.append(f'<text x="{text_x}" y="{text_y}" font-family="{font_family}" font-size="{font_size}" fill="{text_color}" text-anchor="middle">{text_content}</text>')
+        parts.append(f'<text x="{text_x}" y="{text_y}" font-family="{font_family}" font-size="{font_size}" font-style="{font_style}" fill="{text_color}" text-anchor="middle">{text_content}</text>')
 
         return '\n'.join(parts)
 
     def _render_logo(self, comp: Dict, canvas_width: int, canvas_height: int) -> str:
-        """Render G+ logo"""
+        """Render logo (user uploaded or default G+)"""
         geom = self._get_geometry(comp, canvas_width, canvas_height)
         style = comp.get("style", {})
+        content_source = comp.get("content_source", "")
 
         parts = []
 
-        # Logo background
-        bg_color = style.get("background", "#E4087C")
+        # Check if user provided a logo image
+        logo_image = self._get_content(content_source) if content_source else None
 
-        parts.append(f'<rect x="{geom["x"]}" y="{geom["y"]}" width="{geom["width"]}" height="{geom["height"]}" fill="{bg_color}"/>')
+        if logo_image:
+            # User uploaded logo
+            bg_color = style.get("background", "#FFFFFF")
 
-        # G+ text
-        font_size = style.get("font_size", 24)
-        text_x = geom["x"] + geom["width"] / 2
-        text_y = geom["y"] + geom["height"] / 2 + font_size / 3
+            # Background
+            parts.append(f'<rect x="{geom["x"]}" y="{geom["y"]}" width="{geom["width"]}" height="{geom["height"]}" fill="{bg_color}"/>')
 
-        parts.append(f'<text x="{text_x}" y="{text_y}" font-family="Roboto Bold" font-size="{font_size}" fill="#FFFFFF" text-anchor="middle">G+</text>')
+            # Logo image (centered, with padding)
+            padding = style.get("padding", 10)
+            img_x = geom["x"] + padding
+            img_y = geom["y"] + padding
+            img_w = geom["width"] - padding * 2
+            img_h = geom["height"] - padding * 2
 
-        # Optional subtitle
-        if style.get("show_subtitle"):
-            subtitle_size = font_size * 0.3
-            parts.append(f'<text x="{text_x}" y="{text_y + subtitle_size + 2}" font-family="Roboto Bold" font-size="{subtitle_size}" fill="#FFFFFF" text-anchor="middle">CONTENUTI</text>')
-            parts.append(f'<text x="{text_x}" y="{text_y + subtitle_size * 2 + 4}" font-family="Roboto Bold" font-size="{subtitle_size}" fill="#FFFFFF" text-anchor="middle">PREMIUM</text>')
+            parts.append(f'<image href="{logo_image}" x="{img_x}" y="{img_y}" width="{img_w}" height="{img_h}" preserveAspectRatio="xMidYMid meet"/>')
+        else:
+            # Default G+ logo (fallback)
+            bg_color = style.get("background", "#E4087C")
+            parts.append(f'<rect x="{geom["x"]}" y="{geom["y"]}" width="{geom["width"]}" height="{geom["height"]}" fill="{bg_color}"/>')
+
+            # G+ text
+            font_size = style.get("font_size", 24)
+            text_x = geom["x"] + geom["width"] / 2
+            text_y = geom["y"] + geom["height"] / 2 + font_size / 3
+
+            parts.append(f'<text x="{text_x}" y="{text_y}" font-family="Roboto Bold" font-size="{font_size}" fill="#FFFFFF" text-anchor="middle">G+</text>')
+
+            # Optional subtitle
+            if style.get("show_subtitle"):
+                subtitle_size = font_size * 0.3
+                parts.append(f'<text x="{text_x}" y="{text_y + subtitle_size + 2}" font-family="Roboto Bold" font-size="{subtitle_size}" fill="#FFFFFF" text-anchor="middle">CONTENUTI</text>')
+                parts.append(f'<text x="{text_x}" y="{text_y + subtitle_size * 2 + 4}" font-family="Roboto Bold" font-size="{subtitle_size}" fill="#FFFFFF" text-anchor="middle">PREMIUM</text>')
+
+        return '\n'.join(parts)
+
+    def _render_price_display(self, comp: Dict, canvas_width: int, canvas_height: int) -> str:
+        """Render price with large integer, small decimal/currency, and period below
+
+        Layout:
+        [14]  [,99€]
+              [/ANNO]
+        """
+        geom = self._get_geometry(comp, canvas_width, canvas_height)
+        style = comp.get("style", {})
+
+        # Get price and period from content sources
+        price_source = comp.get("price_source", "")
+        period_source = comp.get("period_source", "")
+
+        price_text = self._get_content(price_source) if price_source else ""
+        period_text = self._get_content(period_source) if period_source else ""
+
+        if not price_text:
+            return ""
+
+        parts = []
+
+        text_color = style.get("text_color", "#FFFFFF")
+        font_family = style.get("font_family", "Oswald Bold")
+        alignment = style.get("alignment", "center")
+
+        # Split price into integer and decimal parts
+        # Expected format: "14,99€" or "14.99€" or just "14€"
+        import re
+        match = re.match(r'^(\d+)([.,]\d+)?(.*)$', price_text.strip())
+
+        if match:
+            integer_part = match.group(1)  # "14"
+            decimal_part = (match.group(2) or "") + (match.group(3) or "")  # ",99€"
+        else:
+            # Fallback: use entire price as integer
+            integer_part = price_text
+            decimal_part = ""
+
+        # Font sizes
+        large_size = int(geom["height"] * 0.75)  # Integer takes ~75% of height
+        small_size = int(geom["height"] * 0.35)  # Decimal/period takes ~35% of height
+        period_size = int(geom["height"] * 0.25)  # Period even smaller ~25% of height
+
+        # Calculate center point for splitting integer and decimal
+        center_x = geom["x"] + geom["width"] / 2
+
+        # Vertical centering calculation
+        content_height = large_size
+        if period_text:
+            content_height += period_size * 1.0
+
+        start_y = geom["y"] + (geom["height"] - content_height) / 2
+
+        # Get font style from component style
+        font_style = style.get("font_style", "normal")
+
+        # Spacing between integer and decimal parts
+        spacing = 5  # pixels
+
+        # Render integer part (large, right-aligned to center with spacing)
+        int_x = center_x - spacing
+        int_y = start_y + large_size
+        parts.append(f'<text x="{int_x}" y="{int_y}" font-family="{font_family}" font-size="{large_size}" font-style="{font_style}" fill="{text_color}" text-anchor="end">{integer_part}</text>')
+
+        # Render decimal part (small, left-aligned from center with spacing, top-aligned)
+        if decimal_part:
+            dec_x = center_x + spacing
+            dec_y = start_y + small_size * 1.2  # Top-aligned
+            parts.append(f'<text x="{dec_x}" y="{dec_y}" font-family="{font_family}" font-size="{small_size}" font-style="{font_style}" fill="{text_color}" text-anchor="start">{decimal_part}</text>')
+
+        # Render period (smaller, aligned to baseline of integer, left-aligned from center with spacing)
+        if period_text:
+            period_x = center_x + spacing
+            period_y = int_y  # Same baseline as integer
+            parts.append(f'<text x="{period_x}" y="{period_y}" font-family="{font_family}" font-size="{period_size}" font-style="{font_style}" fill="{text_color}" text-anchor="start">{period_text}</text>')
 
         return '\n'.join(parts)
 

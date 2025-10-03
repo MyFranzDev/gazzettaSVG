@@ -47,6 +47,38 @@
             </div>
         </div>
 
+        <!-- Logo Small Upload -->
+        <div class="form-group" style="margin-top: 30px;">
+            <label>Logo Versione Contratta (per spazi ristretti) *</label>
+            <p style="font-size: 13px; color: #666; margin-bottom: 15px;">Versione compatta/quadrata del logo per banner piccoli. Solo PNG trasparenti.</p>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <!-- Logo Small White Background -->
+                <div>
+                    <label style="font-size: 14px; color: #333; margin-bottom: 8px; display: block;">Logo small su sfondo chiaro *</label>
+                    <div id="logoSmallWhiteBgPreview" style="margin-top: 10px; display: block; padding: 15px; background: white; border: 1px solid #e0e0e0; border-radius: 6px; text-align: center;">
+                        <img id="logoSmallWhiteBgImg" src="logos/G_nero.png" style="max-width: 80px; max-height: 80px;">
+                        <p style="margin-top: 8px; font-size: 12px; color: #666;">
+                            <a href="#" id="removeLogoSmallWhiteBg" style="color: #f44336; text-decoration: none;">✕ Rimuovi</a>
+                        </p>
+                    </div>
+                    <input type="hidden" name="logo_small_white_default" value="logos/G_nero.png">
+                </div>
+
+                <!-- Logo Small Dark Background -->
+                <div>
+                    <label style="font-size: 14px; color: #333; margin-bottom: 8px; display: block;">Logo small su sfondo scuro *</label>
+                    <div id="logoSmallDarkBgPreview" style="margin-top: 10px; display: block; padding: 15px; background: #2a2a2a; border: 1px solid #444; border-radius: 6px; text-align: center;">
+                        <img id="logoSmallDarkBgImg" src="logos/G_bianco.png" style="max-width: 80px; max-height: 80px;">
+                        <p style="margin-top: 8px; font-size: 12px; color: #ccc;">
+                            <a href="#" id="removeLogoSmallDarkBg" style="color: #ff6b6b; text-decoration: none;">✕ Rimuovi</a>
+                        </p>
+                    </div>
+                    <input type="hidden" name="logo_small_dark_default" value="logos/G_bianco.png">
+                </div>
+            </div>
+        </div>
+
         <!-- Font List -->
         <div class="form-group" style="margin-top: 30px;">
             <label>Font Disponibili</label>
