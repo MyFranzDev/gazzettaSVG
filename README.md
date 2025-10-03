@@ -7,9 +7,13 @@ Generatore automatico di banner SVG promozionali per Gazzetta dello Sport con in
 - **🚀 Multi-Banner Generation**: 1 input → N banner in formati diversi
 - **📐 Template-Driven Architecture**: Layout definiti in JSON, zero duplicazione codice
 - **🌐 Web Interface**: Frontend PHP intuitivo con wizard 5-step
+- **✏️ Post-Generation Editing**: Modifica testi inline dopo la generazione con anteprima live
 - **🤖 AI-Powered Copywriting**: Generazione automatica di 3 varianti di testi (FOMO, Esclusiva, Soft) tramite OpenAI
 - **🎨 Auto Background Selection**: Selezione automatica dello sfondo in base a sport e competizione
-- **🔤 Font Embedded**: Font Oswald e Roboto incorporati nel SVG (nessuna dipendenza esterna)
+- **🔤 Font Embedded**: Font Oswald e Roboto (Regular/Bold/Italic) incorporati nel SVG
+- **💰 Split Price Display**: Prezzo separato da periodicità con layout complesso (integer grande + decimali piccoli)
+- **🎨 Advanced Text Auto-sizing**: Algoritmo intelligente per riempire lo spazio disponibile
+- **🖼️ Custom Logo Support**: Carica loghi personalizzati (versione full e small, white/dark backgrounds)
 - **⚡ Scalabile**: Aggiungi nuovi template senza modificare codice Python
 - **📦 Output SVG**: File vettoriali scalabili e leggeri
 
@@ -55,15 +59,17 @@ Apri il browser su `http://localhost:8000` e accedi con password: `touchlabs2`
 #### Wizard 5-Step
 
 **Step 1: Evento**
-- Inserisci nome evento e prezzo
+- Inserisci nome evento
+- **Prezzo separato**: Campo dedicato per prezzo (es. `0,99€`) e periodicità (es. `/mese`)
 - Seleziona stile grafico (2 varianti con preview visiva)
 - Scegli lo sport dalla griglia con emoji
 
 **Step 2: Risorse**
-- Logo Gazzetta precaricato (bianco/nero) con possibilità di override
-- Visualizza font disponibili (Oswald Bold, Roboto Bold, Roboto Regular)
+- **Logo personalizzati**: Carica loghi full e small per sfondi chiari/scuri (4 varianti)
+- Logo Gazzetta precaricato (bianco/nero) come fallback
+- Visualizza font disponibili (Oswald Bold/BoldItalic, Roboto Bold/BoldItalic/Regular)
 - Carica immagine opzionale
-- Seleziona sfondo filtrato per sport
+- Seleziona sfondo filtrato per sport (41 sfondi disponibili, 10 nuovi per Calcio)
 - [DEMO] Genera sfondo con AI (disabilitato in demo)
 
 **Step 3: Testi**
@@ -76,9 +82,12 @@ Apri il browser su `http://localhost:8000` e accedi con password: `touchlabs2`
 - Checkbox multipli con "Seleziona tutti"
 - Anteprima count banner selezionati
 
-**Step 5: Download**
+**Step 5: Download & Editing**
 - Riepilogo configurazione
-- Lista banner generati
+- **Preview banner** con editing inline
+- **Modifica testi direttamente**: Header, Titolo, CTA, Prezzo, Periodicità
+- **Rigenera singolo banner** con nuovi testi via AJAX
+- **Notifiche animate** per feedback utente
 - Download individuale o ZIP completo
 
 #### Caratteristiche Web Interface
@@ -89,6 +98,9 @@ Apri il browser su `http://localhost:8000` e accedi con password: `touchlabs2`
 - ✅ Snackbar notifications per funzioni demo
 - ✅ LocalStorage per history AI backgrounds
 - ✅ Mock data per sviluppo frontend standalone
+- ✅ **Post-generation editing**: Modifica inline con rigenerazione AJAX
+- ✅ **API REST**: Endpoint `/api/regenerate_banner.php` per rigenerazione singoli banner
+- ✅ **Notifiche animate**: Feedback visivo per operazioni utente
 
 ---
 
@@ -290,16 +302,17 @@ Opzioni:
 
 ### Tipi di Componenti Supportati
 
-Il template engine supporta 9 tipi di componenti:
+Il template engine supporta 10 tipi di componenti:
 
-1. **`background_layer`** - Layer di sfondo colorato
-2. **`text_block`** - Blocco testo con background
-3. **`text_only`** - Solo testo senza sfondo
+1. **`background_layer`** - Layer di sfondo colorato o immagine con clipping
+2. **`text_block`** - Blocco testo con header e title auto-sized (40/60 split)
+3. **`text_only`** - Solo testo senza sfondo, con auto-sizing opzionale
 4. **`image`** - Immagine utente semplice
 5. **`smartphone_mockup`** - Mockup smartphone con immagine e badge
-6. **`cta_button`** - Pulsante call-to-action
-7. **`logo`** - Logo G+ Gazzetta
+6. **`cta_button`** - Pulsante call-to-action con auto-sizing e italic support
+7. **`logo`** - Logo personalizzato o G+ Gazzetta (supporta upload utente)
 8. **`bullet_list`** - Lista puntata con checkmark
+9. **`price_display`** - Display prezzo complesso (integer grande + decimali + periodo)
 
 ## 🎯 Sfondi Supportati per Sport
 
@@ -314,10 +327,22 @@ Il template engine supporta 9 tipi di componenti:
 - Champions League 3 - bg17.png
 - Generico 1 - bg18.png
 - Generico 2 - bg19.png
-- Generico 3 - bg20.png
-- Generico 4 - bg22.png
-- Generico 5 - bg23.png
-- Generico 6 - bg24.png
+- Calcio 1 - bg20.png
+- Calcio 2 - bg22.png
+- Calcio 3 - bg23.png
+- Calcio 4 - bg24.png
+- Calcio 5 - bg30.png
+- Calcio 6 - bg31.png
+- Calcio 7 - bg32.png
+- Calcio 8 - bg33.png
+- Calcio 9 - bg34.png
+- Calcio 10 - bg35.png
+- Calcio 11 - bg36.png
+- Calcio 12 - bg37.png
+- Calcio 13 - bg38.png
+- Calcio 14 - bg39.png
+- Calcio 15 - bg40.png
+- Calcio 16 - bg41.png
 
 ### Tennis
 - Wimbledon - bg11.png
@@ -343,6 +368,58 @@ Il template engine supporta 9 tipi di componenti:
 - F1/MotoGP 3 - bg27.png
 - F1/MotoGP 4 - bg28.png
 - F1/MotoGP 5 - bg29.png
+
+## 🎨 Template 728x90 "Bologna Style"
+
+Il template Leaderboard 728x90 è stato completamente ridisegnato con funzionalità avanzate:
+
+### Caratteristiche Principali
+
+- **Background full-width con overlay**: Immagine di sfondo a piena larghezza con overlay semi-trasparente (65% opacità) sul lato sinistro
+- **Logo personalizzato small**: Supporto per logo utente in versione compatta (95x90px)
+- **Text block auto-sized**: Header e title con auto-sizing intelligente (split 40/60)
+- **Price display complesso**:
+  - Numero intero grande (75% altezza)
+  - Decimali piccoli top-right (35% altezza)
+  - Periodicità piccola bottom-right (25% altezza)
+  - Spacing di 5px tra componenti
+  - Supporto font italic
+- **CTA button**: Auto-sizing con border-radius ridotto (8px) e italic support
+- **Vertical centering**: Tutti i testi centrati verticalmente nello spazio disponibile
+
+### Layout (728x90px)
+
+```
+[Logo 95px] [Header + Title 270px] [Price 165px] [CTA 155px]
+                                    14  ,99€
+                                        /ANNO
+```
+
+### Esempio Template JSON
+
+```json
+{
+  "id": "price_block",
+  "type": "price_display",
+  "price_source": "price",
+  "period_source": "price_period",
+  "geometry": {"x": 383, "y": 0, "width": 165, "height": 90},
+  "style": {
+    "text_color": "#FFFFFF",
+    "font_family": "Oswald Bold",
+    "font_style": "italic",
+    "alignment": "center"
+  }
+}
+```
+
+### Font Support
+
+Il template supporta font italic:
+- **Oswald Bold Italic** (o fallback Oswald HeavyItalic 800 TTF)
+- **Roboto Bold Italic**
+
+Entrambi embedding via WOFF2 o TTF, con auto-fallback a system fonts.
 
 ## 🔧 Configurazione Avanzata
 
