@@ -299,20 +299,22 @@ Opzioni:
 | Half Page | 300x600 | Vertical | Titolo, Subtitle, Bullets, Smartphone, CTA |
 | Leaderboard | 728x90 | Horizontal | Logo, Titolo, Subtitle, CTA |
 | Large Billboard | 735x280 | Horizontal | 2 Smartphone, Titolo, Subtitle, Bullets, CTA |
+| **Full HD Banner** | **1920x1080** | **Horizontal** | **Logo+Text auto-centered, 2 Side Columns, Price, CTA, Footer** |
 
 ### Tipi di Componenti Supportati
 
-Il template engine supporta 10 tipi di componenti:
+Il template engine supporta 11 tipi di componenti:
 
 1. **`background_layer`** - Layer di sfondo colorato o immagine con clipping
 2. **`text_block`** - Blocco testo con header e title auto-sized (40/60 split)
-3. **`text_only`** - Solo testo senza sfondo, con auto-sizing opzionale
+3. **`text_only`** - Solo testo senza sfondo, con auto-sizing opzionale e alignment (left/right/center)
 4. **`image`** - Immagine utente semplice
 5. **`smartphone_mockup`** - Mockup smartphone con immagine e badge
 6. **`cta_button`** - Pulsante call-to-action con auto-sizing e italic support
 7. **`logo`** - Logo personalizzato o G+ Gazzetta (supporta upload utente)
 8. **`bullet_list`** - Lista puntata con checkmark
-9. **`price_display`** - Display prezzo complesso (integer grande + decimali + periodo)
+9. **`price_display`** - Display prezzo complesso con alignment dinamico (left/right/center)
+10. **`logo_text_group`** - Logo + testo auto-centrati orizzontalmente con color filter support
 
 ## 🎯 Sfondi Supportati per Sport
 
@@ -368,6 +370,95 @@ Il template engine supporta 10 tipi di componenti:
 - F1/MotoGP 3 - bg27.png
 - F1/MotoGP 4 - bg28.png
 - F1/MotoGP 5 - bg29.png
+
+## 🎨 Template 1920x1080 "Full HD Banner"
+
+Il nuovo template Full HD 1920x1080 è un banner orizzontale premium con layout simmetrico e funzionalità avanzate.
+
+### Caratteristiche Principali
+
+- **Top overlay semitrasparente**: Fascia superiore 1920x140px con overlay rgba(10, 20, 40, 0.65)
+- **Bottom overlay semitrasparente**: Fascia inferiore 1920x125px con stesso overlay, sotto la parte bianca
+- **Centro bianco**: Area centrale 977x970px (x=471, y=110) che si sovrappone 30px alla fascia superiore
+- **Logo+Text auto-centered**: Nuovo componente `logo_text_group` con:
+  - Auto-centering orizzontale del gruppo logo+testo
+  - Calcolo dinamico larghezza testo (char_width_ratio 0.55 per Oswald, 0.6 per altri)
+  - Color filter SVG per colorare il logo (#bb2b60)
+  - Vertical adjustment (-10px per spostare in alto)
+- **Colonne laterali simmetriche**: 150px di larghezza con 12px padding verso centro
+  - **Left column** (x=321): elementi allineati a destra
+  - **Right column** (x=1460): elementi allineati a sinistra
+  - Contenuto: smartphone 80x145px, description, price, CTA 130x40px
+- **Price display con alignment dinamico**:
+  - **Right alignment**: parte decimale allineata a destra, intero a sinistra
+  - **Left alignment**: parte intera allineata a sinistra, decimale a destra
+  - Calcolo dinamico larghezze per posizionamento
+- **Text alignment avanzato**: Supporto completo per left/right/center con SVG text-anchor
+- **Debug guides opzionale**: Barre rosse/verdi 12px per verificare padding (disabilitabili con `debug_guides: false`)
+
+### Layout (1920x1080px)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  TOP OVERLAY (140px) - rgba(10,20,40,0.65)                  │
+│     [Logo Rosa] HEADER: TITLE                               │
+├──────┬────────────────────────────────────────────┬─────────┤
+│ LEFT │      CENTER WHITE AREA (977x970)           │  RIGHT  │
+│ COL  │                                            │   COL   │
+│150px │         (Content goes here)                │  150px  │
+│      │                                            │         │
+│ 📱   │                                            │    📱   │
+│ Desc │                                            │   Desc  │
+│Price │                                            │  Price  │
+│ CTA  │                                            │   CTA   │
+├──────┴────────────────────────────────────────────┴─────────┤
+│  BOTTOM OVERLAY (125px) - rgba(10,20,40,0.65)               │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Spacing e Allineamento
+
+- **Top overlay**: y=0, height=140px
+- **White area**: y=110, height=970px (overlap 30px con top)
+- **Bottom overlay**: y=955, height=125px (sotto white area)
+- **Side columns padding**: 12px verso centro
+- **Elements vertical spacing**: smartphone→description: 15px, description→price: 40px, price→CTA: 15px
+- **Elements vertical alignment**: tutti allineati verso l'alto a y=140
+
+### Esempio Template JSON
+
+```json
+{
+  "id": "top_logo_text",
+  "type": "logo_text_group",
+  "logo_source": "logo_small_dark",
+  "text_source": "header_title_combined",
+  "geometry": {"x": 0, "y": 0, "width": 1920, "height": 140},
+  "style": {
+    "text_color": "#FFFFFF",
+    "font_family": "Oswald Bold",
+    "font_style": "italic",
+    "font_size": 48,
+    "logo_size": 100,
+    "logo_padding": 8,
+    "gap": 10,
+    "logo_color": "#bb2b60"
+  }
+}
+```
+
+### Color Filter per Logo
+
+Il componente `logo_text_group` supporta `logo_color` per colorare dinamicamente il logo tramite SVG `feColorMatrix`:
+
+```python
+# Converte hex #bb2b60 in valori RGB normalizzati
+R = int("bb", 16) / 255  # 0.733
+G = int("2b", 16) / 255  # 0.169
+B = int("60", 16) / 255  # 0.376
+```
+
+---
 
 ## 🎨 Template 728x90 "Bologna Style"
 

@@ -73,6 +73,10 @@ class TemplateEngine:
         for component in template.get("components", []):
             svg_parts.append(self._render_component(component, width, height))
 
+        # Add debug guides if enabled
+        if template.get("debug_guides", False):
+            svg_parts.append(self._render_debug_guides(template))
+
         svg_parts.append('</svg>')
 
         return '\n'.join(svg_parts)
@@ -127,6 +131,8 @@ class TemplateEngine:
             return self._render_bullet_list(comp, canvas_width, canvas_height)
         elif comp_type == "price_display":
             return self._render_price_display(comp, canvas_width, canvas_height)
+        elif comp_type == "logo_text_group":
+            return self._render_logo_text_group(comp, canvas_width, canvas_height)
 
         return ""
 
@@ -335,9 +341,17 @@ class TemplateEngine:
 
         parts = []
         for i, line in enumerate(lines):
-            text_x = geom["x"] + geom["width"] / 2 if alignment == "center" else geom["x"]
+            if alignment == "center":
+                text_x = geom["x"] + geom["width"] / 2
+                text_anchor = "middle"
+            elif alignment == "right":
+                text_x = geom["x"] + geom["width"]
+                text_anchor = "end"
+            else:  # left
+                text_x = geom["x"]
+                text_anchor = "start"
+
             text_y = start_y + i * line_height
-            text_anchor = "middle" if alignment == "center" else "start"
 
             parts.append(f'<text x="{text_x}" y="{text_y}" font-family="{font_family}" font-size="{font_size}" fill="{text_color}" text-anchor="{text_anchor}">{line}</text>')
 
@@ -568,8 +582,13 @@ class TemplateEngine:
         small_size = int(geom["height"] * 0.35)  # Decimal/period takes ~35% of height
         period_size = int(geom["height"] * 0.25)  # Period even smaller ~25% of height
 
-        # Calculate center point for splitting integer and decimal
-        center_x = geom["x"] + geom["width"] / 2
+        # Calculate anchor point based on alignment
+        if alignment == "center":
+            anchor_x = geom["x"] + geom["width"] / 2
+        elif alignment == "right":
+            anchor_x = geom["x"] + geom["width"]
+        else:  # left
+            anchor_x = geom["x"]
 
         # Vertical centering calculation
         content_height = large_size
@@ -584,22 +603,97 @@ class TemplateEngine:
         # Spacing between integer and decimal parts
         spacing = 5  # pixels
 
-        # Render integer part (large, right-aligned to center with spacing)
-        int_x = center_x - spacing
-        int_y = start_y + large_size
-        parts.append(f'<text x="{int_x}" y="{int_y}" font-family="{font_family}" font-size="{large_size}" font-style="{font_style}" fill="{text_color}" text-anchor="end">{integer_part}</text>')
+        if alignment == "right":
+            # For right alignment, we align the rightmost element (decimal or period) to anchor
+            int_y = start_y + large_size
 
-        # Render decimal part (small, left-aligned from center with spacing, top-aligned)
-        if decimal_part:
-            dec_x = center_x + spacing
-            dec_y = start_y + small_size * 1.2  # Top-aligned
-            parts.append(f'<text x="{dec_x}" y="{dec_y}" font-family="{font_family}" font-size="{small_size}" font-style="{font_style}" fill="{text_color}" text-anchor="start">{decimal_part}</text>')
+            # Calculate approximate widths for positioning
+            char_width_large = large_size * 0.6
+            char_width_small = small_size * 0.6
+            char_width_period = period_size * 0.6
 
-        # Render period (smaller, aligned to baseline of integer, left-aligned from center with spacing)
-        if period_text:
-            period_x = center_x + spacing
-            period_y = int_y  # Same baseline as integer
-            parts.append(f'<text x="{period_x}" y="{period_y}" font-family="{font_family}" font-size="{period_size}" font-style="{font_style}" fill="{text_color}" text-anchor="start">{period_text}</text>')
+            if decimal_part and period_text:
+                # Has both decimal and period - period is rightmost
+                period_x = anchor_x
+                period_y = int_y
+                period_width = len(period_text) * char_width_period
+                parts.append(f'<text x="{period_x}" y="{period_y}" font-family="{font_family}" font-size="{period_size}" font-style="{font_style}" fill="{text_color}" text-anchor="end">{period_text}</text>')
+
+                # Decimal goes above period, also right-aligned
+                dec_x = anchor_x
+                dec_y = start_y + small_size * 1.2
+                parts.append(f'<text x="{dec_x}" y="{dec_y}" font-family="{font_family}" font-size="{small_size}" font-style="{font_style}" fill="{text_color}" text-anchor="end">{decimal_part}</text>')
+
+                # Integer left of decimal, right-aligned
+                decimal_width = len(decimal_part) * char_width_small
+                int_x = dec_x - decimal_width - spacing
+                parts.append(f'<text x="{int_x}" y="{int_y}" font-family="{font_family}" font-size="{large_size}" font-style="{font_style}" fill="{text_color}" text-anchor="end">{integer_part}</text>')
+
+            elif decimal_part:
+                # Only decimal, no period
+                dec_x = anchor_x
+                dec_y = start_y + small_size * 1.2
+                parts.append(f'<text x="{dec_x}" y="{dec_y}" font-family="{font_family}" font-size="{small_size}" font-style="{font_style}" fill="{text_color}" text-anchor="end">{decimal_part}</text>')
+
+                decimal_width = len(decimal_part) * char_width_small
+                int_x = dec_x - decimal_width - spacing
+                parts.append(f'<text x="{int_x}" y="{int_y}" font-family="{font_family}" font-size="{large_size}" font-style="{font_style}" fill="{text_color}" text-anchor="end">{integer_part}</text>')
+
+            else:
+                # Only integer, maybe period
+                if period_text:
+                    period_x = anchor_x
+                    period_y = int_y
+                    parts.append(f'<text x="{period_x}" y="{period_y}" font-family="{font_family}" font-size="{period_size}" font-style="{font_style}" fill="{text_color}" text-anchor="end">{period_text}</text>')
+
+                    period_width = len(period_text) * char_width_period
+                    int_x = period_x - period_width - spacing
+                else:
+                    int_x = anchor_x
+
+                parts.append(f'<text x="{int_x}" y="{int_y}" font-family="{font_family}" font-size="{large_size}" font-style="{font_style}" fill="{text_color}" text-anchor="end">{integer_part}</text>')
+        elif alignment == "left":
+            # For left alignment, integer starts at anchor, decimal/period follow
+            int_y = start_y + large_size
+
+            # Calculate approximate widths for positioning
+            char_width_large = large_size * 0.6
+            char_width_small = small_size * 0.6
+
+            # Integer part: left-aligned to anchor
+            int_x = anchor_x
+            integer_width = len(integer_part) * char_width_large
+            parts.append(f'<text x="{int_x}" y="{int_y}" font-family="{font_family}" font-size="{large_size}" font-style="{font_style}" fill="{text_color}" text-anchor="start">{integer_part}</text>')
+
+            if decimal_part:
+                # Decimal part: positioned after integer with spacing
+                dec_x = int_x + integer_width + spacing
+                dec_y = start_y + small_size * 1.2
+                parts.append(f'<text x="{dec_x}" y="{dec_y}" font-family="{font_family}" font-size="{small_size}" font-style="{font_style}" fill="{text_color}" text-anchor="start">{decimal_part}</text>')
+
+            if period_text:
+                # Period: positioned after integer with spacing, same baseline
+                period_x = int_x + integer_width + spacing
+                period_y = int_y
+                parts.append(f'<text x="{period_x}" y="{period_y}" font-family="{font_family}" font-size="{period_size}" font-style="{font_style}" fill="{text_color}" text-anchor="start">{period_text}</text>')
+
+        else:
+            # Center alignment (original logic)
+            int_x = anchor_x - spacing
+            int_y = start_y + large_size
+            parts.append(f'<text x="{int_x}" y="{int_y}" font-family="{font_family}" font-size="{large_size}" font-style="{font_style}" fill="{text_color}" text-anchor="end">{integer_part}</text>')
+
+            # Render decimal part (small, left-aligned from anchor with spacing, top-aligned)
+            if decimal_part:
+                dec_x = anchor_x + spacing
+                dec_y = start_y + small_size * 1.2  # Top-aligned
+                parts.append(f'<text x="{dec_x}" y="{dec_y}" font-family="{font_family}" font-size="{small_size}" font-style="{font_style}" fill="{text_color}" text-anchor="start">{decimal_part}</text>')
+
+            # Render period (smaller, aligned to baseline of integer, left-aligned from anchor with spacing)
+            if period_text:
+                period_x = anchor_x + spacing
+                period_y = int_y  # Same baseline as integer
+                parts.append(f'<text x="{period_x}" y="{period_y}" font-family="{font_family}" font-size="{period_size}" font-style="{font_style}" fill="{text_color}" text-anchor="start">{period_text}</text>')
 
         return '\n'.join(parts)
 
@@ -629,6 +723,92 @@ class TemplateEngine:
 
             # Item text
             parts.append(f'<text x="{geom["x"] + font_size + 5}" y="{y_pos}" font-family="{font_family}" font-size="{font_size}" fill="{text_color}">{item_text}</text>')
+
+        return '\n'.join(parts)
+
+    def _render_logo_text_group(self, comp: Dict, canvas_width: int, canvas_height: int) -> str:
+        """Render logo + text centered horizontally as a group"""
+        geom = self._get_geometry(comp, canvas_width, canvas_height)
+        style = comp.get("style", {})
+
+        # Get content sources
+        logo_source = comp.get("logo_source", "")
+        text_source = comp.get("text_source", "")
+
+        logo_image = self._get_content(logo_source) if logo_source else None
+        text_content = self._get_content(text_source)
+
+        if not text_content:
+            return ""
+
+        parts = []
+
+        # Logo dimensions
+        logo_size = style.get("logo_size", 100)
+        gap = style.get("gap", 10)
+
+        # Text styling
+        text_color = style.get("text_color", "#FFFFFF")
+        font_family = style.get("font_family", "Oswald Bold")
+        font_style = style.get("font_style", "normal")
+        font_size = style.get("font_size", 48)
+
+        # Calculate approximate text width (for centering)
+        char_width_ratio = 0.55 if "Oswald" in font_family else 0.6
+        text_width = len(text_content) * font_size * char_width_ratio
+
+        # Total group width
+        total_width = (logo_size if logo_image else 0) + (gap if logo_image else 0) + text_width
+
+        # Center the group
+        center_x = geom["x"] + geom["width"] / 2
+        group_start_x = center_x - total_width / 2
+
+        # Vertical centering (spostato più in alto)
+        center_y = geom["y"] + geom["height"] / 2 - 10  # -10px per spostare in alto
+
+        # Render logo (if provided)
+        if logo_image:
+            logo_x = group_start_x
+            logo_y = center_y - logo_size / 2
+            padding = style.get("logo_padding", 8)
+            logo_color = style.get("logo_color", None)
+
+            # If logo_color is specified, apply a color filter
+            if logo_color:
+                filter_id = f"logo-color-{comp.get('id', 'default')}"
+                # Create a color filter that replaces white with the specified color
+                parts.append(f'''<defs>
+                    <filter id="{filter_id}">
+                        <feColorMatrix type="matrix" values="
+                            0 0 0 0 {int(logo_color[1:3], 16)/255}
+                            0 0 0 0 {int(logo_color[3:5], 16)/255}
+                            0 0 0 0 {int(logo_color[5:7], 16)/255}
+                            0 0 0 1 0"/>
+                    </filter>
+                </defs>''')
+                parts.append(f'<image href="{logo_image}" x="{logo_x + padding}" y="{logo_y + padding}" width="{logo_size - padding * 2}" height="{logo_size - padding * 2}" preserveAspectRatio="xMidYMid meet" filter="url(#{filter_id})"/>')
+            else:
+                parts.append(f'<image href="{logo_image}" x="{logo_x + padding}" y="{logo_y + padding}" width="{logo_size - padding * 2}" height="{logo_size - padding * 2}" preserveAspectRatio="xMidYMid meet"/>')
+
+        # Render text
+        text_x = group_start_x + (logo_size + gap if logo_image else 0)
+        text_y = center_y + font_size / 3  # Baseline adjustment
+
+        parts.append(f'<text x="{text_x}" y="{text_y}" font-family="{font_family}" font-size="{font_size}" font-style="{font_style}" fill="{text_color}" text-anchor="start">{text_content}</text>')
+
+        return '\n'.join(parts)
+    def _render_debug_guides(self, template: Dict) -> str:
+        """Render debug guides for alignment verification"""
+        parts = []
+
+        # Guide for left column boundary (x=471, right edge of left column content area)
+        parts.append(f'<rect x="459" y="0" width="12" height="{template["height"]}" fill="rgba(255,0,0,0.3)"/>')
+        parts.append(f'<text x="465" y="20" font-size="10" fill="red">padding 12px</text>')
+
+        # Guide for right column boundary (x=1460, left edge of right column)
+        parts.append(f'<rect x="1448" y="0" width="12" height="{template["height"]}" fill="rgba(0,255,0,0.3)"/>')
+        parts.append(f'<text x="1450" y="20" font-size="10" fill="green">padding 12px</text>')
 
         return '\n'.join(parts)
 

@@ -1,0 +1,227 @@
+{
+  "name": "Full HD Banner 1920x1080",
+  "width": 1920,
+  "height": 1080,
+  "debug_guides": false,
+  "components": [
+    {
+      "id": "background",
+      "type": "background_layer",
+      "geometry": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 1080
+      },
+      "style": {
+        "use_background_image": true
+      }
+    },
+    {
+      "id": "top_overlay",
+      "type": "background_layer",
+      "geometry": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 140
+      },
+      "style": {
+        "background": "rgba(10, 20, 40, 0.65)",
+        "opacity": 1
+      }
+    },
+    {
+      "id": "bottom_overlay",
+      "type": "background_layer",
+      "geometry": {
+        "x": 0,
+        "y": 955,
+        "width": 1920,
+        "height": 125
+      },
+      "style": {
+        "background": "rgba(10, 20, 40, 0.65)",
+        "opacity": 1
+      }
+    },
+    {
+      "id": "center_white_area",
+      "type": "background_layer",
+      "geometry": {
+        "x": 471,
+        "y": 110,
+        "width": 977,
+        "height": 970
+      },
+      "style": {
+        "background": "#FFFFFF",
+        "opacity": 1
+      }
+    },
+    {
+      "id": "top_logo_text",
+      "type": "logo_text_group",
+      "logo_source": "logo_small_dark",
+      "text_source": "header_title_combined",
+      "geometry": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 140
+      },
+      "style": {
+        "text_color": "#FFFFFF",
+        "font_family": "Oswald Bold",
+        "font_style": "italic",
+        "font_size": 48,
+        "logo_size": 100,
+        "logo_padding": 8,
+        "gap": 10,
+        "logo_color": "#bb2b60"
+      }
+    },
+    {
+      "id": "left_smartphone",
+      "type": "smartphone_mockup",
+      "content_source": "user_image",
+      "geometry": {
+        "x": 379,
+        "y": 140,
+        "width": 80,
+        "height": 145
+      },
+      "style": {
+        "background": "#1a1a1a",
+        "show_notch": true,
+        "show_badge": false
+      }
+    },
+    {
+      "id": "left_description",
+      "type": "text_only",
+      "content_source": "description_text",
+      "geometry": {
+        "x": 321,
+        "y": 300,
+        "width": 138,
+        "height": 100
+      },
+      "style": {
+        "text_color": "#FFFFFF",
+        "font_family": "Roboto",
+        "font_size": 24,
+        "alignment": "right",
+        "auto_size": false
+      }
+    },
+    {
+      "id": "left_price",
+      "type": "price_display",
+      "price_source": "price",
+      "period_source": "price_period",
+      "geometry": {
+        "x": 321,
+        "y": 440,
+        "width": 138,
+        "height": 80
+      },
+      "style": {
+        "text_color": "#FFFFFF",
+        "font_family": "Oswald Bold",
+        "font_style": "italic",
+        "alignment": "right"
+      }
+    },
+    {
+      "id": "left_cta",
+      "type": "cta_button",
+      "content_source": "cta_text",
+      "geometry": {
+        "x": 329,
+        "y": 535,
+        "width": 130,
+        "height": 40
+      },
+      "style": {
+        "background": "#FFD700",
+        "text_color": "#000000",
+        "font_size": 20,
+        "font_family": "Roboto Bold",
+        "font_style": "italic",
+        "border_radius": 8
+      }
+    },
+    {
+      "id": "right_smartphone",
+      "type": "smartphone_mockup",
+      "content_source": "user_image",
+      "geometry": {
+        "x": 1460,
+        "y": 140,
+        "width": 80,
+        "height": 145
+      },
+      "style": {
+        "background": "#1a1a1a",
+        "show_notch": true,
+        "show_badge": false
+      }
+    },
+    {
+      "id": "right_description",
+      "type": "text_only",
+      "content_source": "description_text",
+      "geometry": {
+        "x": 1460,
+        "y": 300,
+        "width": 138,
+        "height": 100
+      },
+      "style": {
+        "text_color": "#FFFFFF",
+        "font_family": "Roboto",
+        "font_size": 24,
+        "alignment": "left",
+        "auto_size": false
+      }
+    },
+    {
+      "id": "right_price",
+      "type": "price_display",
+      "price_source": "price",
+      "period_source": "price_period",
+      "geometry": {
+        "x": 1460,
+        "y": 440,
+        "width": 138,
+        "height": 80
+      },
+      "style": {
+        "text_color": "#FFFFFF",
+        "font_family": "Oswald Bold",
+        "font_style": "italic",
+        "alignment": "left"
+      }
+    },
+    {
+      "id": "right_cta",
+      "type": "cta_button",
+      "content_source": "cta_text",
+      "geometry": {
+        "x": 1460,
+        "y": 535,
+        "width": 130,
+        "height": 40
+      },
+      "style": {
+        "background": "#FFD700",
+        "text_color": "#000000",
+        "font_size": 20,
+        "font_family": "Roboto Bold",
+        "font_style": "italic",
+        "border_radius": 8
+      }
+    }
+  ]
+}
