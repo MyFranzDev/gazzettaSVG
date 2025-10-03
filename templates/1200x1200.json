@@ -1,0 +1,174 @@
+{
+  "name": "Square Banner 1200x1200",
+  "width": 1200,
+  "height": 1200,
+  "debug_guides": false,
+  "components": [
+    {
+      "id": "background",
+      "type": "background_layer",
+      "geometry": {
+        "x": 0,
+        "y": 0,
+        "width": 1200,
+        "height": 1200
+      },
+      "style": {
+        "use_background_image": true
+      }
+    },
+    {
+      "id": "top_overlay",
+      "type": "background_layer",
+      "geometry": {
+        "x": 0,
+        "y": 0,
+        "width": 1200,
+        "height": 185
+      },
+      "style": {
+        "background": "rgba(10, 20, 40, 0.65)",
+        "opacity": 1
+      }
+    },
+    {
+      "id": "bottom_overlay",
+      "type": "background_layer",
+      "geometry": {
+        "x": 0,
+        "y": 1095,
+        "width": 1200,
+        "height": 105
+      },
+      "style": {
+        "background": "rgba(10, 20, 40, 0.65)",
+        "opacity": 1
+      }
+    },
+    {
+      "id": "top_logo_text",
+      "type": "logo_text_group",
+      "logo_source": "logo_small_dark",
+      "text_source": "header_text",
+      "geometry": {
+        "x": 0,
+        "y": 0,
+        "width": 1200,
+        "height": 185
+      },
+      "style": {
+        "text_color": "#FFFFFF",
+        "font_family": "Oswald Bold",
+        "font_style": "italic",
+        "font_size": 80,
+        "logo_size": 140,
+        "logo_padding": 10,
+        "gap": 20,
+        "logo_color": "#bb2b60"
+      }
+    },
+    {
+      "id": "main_title",
+      "type": "text_only",
+      "content_source": "main_title",
+      "geometry": {
+        "x": 0,
+        "y": 185,
+        "width": 1200,
+        "height": 185
+      },
+      "style": {
+        "text_color": "#FFFFFF",
+        "font_family": "Oswald Bold",
+        "font_size": 104,
+        "alignment": "center",
+        "auto_size": false
+      }
+    },
+    {
+      "id": "smartphone",
+      "type": "smartphone_mockup",
+      "content_source": "user_image",
+      "geometry": {
+        "x": 70,
+        "y": 370,
+        "width": 400,
+        "height": 815
+      },
+      "style": {
+        "background": "#1a1a1a",
+        "show_notch": true,
+        "show_badge": false
+      }
+    },
+    {
+      "id": "description",
+      "type": "text_only",
+      "content_source": "description_text",
+      "geometry": {
+        "x": 535,
+        "y": 375,
+        "width": 570,
+        "height": 250
+      },
+      "style": {
+        "text_color": "#FFFFFF",
+        "font_family": "Roboto Bold",
+        "font_size": 55,
+        "alignment": "center",
+        "auto_size": false
+      }
+    },
+    {
+      "id": "price",
+      "type": "price_display",
+      "price_source": "price",
+      "period_source": "price_period",
+      "geometry": {
+        "x": 535,
+        "y": 640,
+        "width": 570,
+        "height": 230
+      },
+      "style": {
+        "text_color": "#FFFFFF",
+        "font_family": "Oswald Bold",
+        "font_style": "italic",
+        "alignment": "center"
+      }
+    },
+    {
+      "id": "cta",
+      "type": "cta_button",
+      "content_source": "cta_text",
+      "geometry": {
+        "x": 535,
+        "y": 905,
+        "width": 570,
+        "height": 80
+      },
+      "style": {
+        "background": "#FFD700",
+        "text_color": "#000000",
+        "font_size": 55,
+        "font_family": "Roboto Bold",
+        "font_style": "italic",
+        "border_radius": 16
+      }
+    },
+    {
+      "id": "bottom_logo",
+      "type": "image",
+      "content_source": "logo_large_dark",
+      "geometry": {
+        "x": 623,
+        "y": 1110,
+        "width": 392,
+        "height": 70
+      },
+      "style": {
+        "preserve_aspect": true
+      }
+    }
+  ]
+}

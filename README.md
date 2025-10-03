@@ -210,24 +210,28 @@ Template disponibili:
   9. 350x250
   10. 728x90
   11. 735x280
-  12. TUTTI
+  12. 1200x1200
+  13. 1920x1080
+  14. TUTTI
 
-Scegli template [1-12] o numeri separati da virgola (es. 1,3,5): 12
+Scegli template [1-14] o numeri separati da virgola (es. 1,3,5): 14
 ```
 
 Opzioni:
 - Singolo template: `3` → genera solo 300x250
 - Multi selezione: `1,3,5,10` → genera 4 banner
-- Tutti: `12` o `tutti` → genera tutti i formati
+- Tutti: `14` o `tutti` → genera tutti i formati
 
 #### **STEP 6: Rendering Multi-Banner**
 ```
-🚀 Generazione 11 banner in corso...
+🚀 Generazione 13 banner in corso...
 ✅ Generated: output/184x90.svg
 ✅ Generated: output/285x130.svg
 ✅ Generated: output/300x250.svg
 ...
-✅ Completato! 11 banner generati in 'output/'
+✅ Generated: output/1200x1200.svg
+✅ Generated: output/1920x1080.svg
+✅ Completato! 13 banner generati in 'output/'
 ```
 
 ## 📁 Struttura Progetto
@@ -264,7 +268,9 @@ Opzioni:
 │   ├── 320x50.json              # Mobile banner
 │   ├── 350x250.json             # Medium
 │   ├── 728x90.json              # Leaderboard
-│   └── 735x280.json             # Large billboard
+│   ├── 735x280.json             # Large billboard
+│   ├── 1200x1200.json           # Square Social Media
+│   └── 1920x1080.json           # Full HD Landscape
 ├── font/                        # Font embedded per CLI
 │   ├── Oswald-Bold.woff2
 │   ├── Roboto-Regular.woff2
@@ -297,9 +303,10 @@ Opzioni:
 | Medium | 350x250 | Horizontal | Smartphone, Titolo, Subtitle, CTA |
 | Vertical | 300x480 | Vertical | Titolo, Subtitle, Bullets, Smartphone, CTA |
 | Half Page | 300x600 | Vertical | Titolo, Subtitle, Bullets, Smartphone, CTA |
-| Leaderboard | 728x90 | Horizontal | Logo, Titolo, Subtitle, CTA |
-| Large Billboard | 735x280 | Horizontal | 2 Smartphone, Titolo, Subtitle, Bullets, CTA |
-| **Full HD Banner** | **1920x1080** | **Horizontal** | **Logo+Text auto-centered, 2 Side Columns, Price, CTA, Footer** |
+| Leaderboard | 728x90 | Horizontal | Logo, Titolo, CTA compatto |
+| Large Billboard | 735x280 | Horizontal | Logo, Titolo, Subtitle, CTA |
+| Square Social | 1200x1200 | Square | Logo+Header, Titolo, Smartphone, Descrizione, Prezzo, CTA, Logo Footer |
+| Full HD Landscape | 1920x1080 | Landscape | Logo+Header, Area centrale bianca, Colonne laterali simmetriche |
 
 ### Tipi di Componenti Supportati
 

@@ -360,14 +360,19 @@ class TemplateEngine:
     def _render_image(self, comp: Dict, canvas_width: int, canvas_height: int) -> str:
         """Render user image"""
         geom = self._get_geometry(comp, canvas_width, canvas_height)
+        style = comp.get("style", {})
         content_source = comp.get("content_source", "")
 
         image_data = self._get_content(content_source)
         if not image_data:
             return ""
 
-        fit = comp.get("style", {}).get("fit", "cover")
-        preserve_aspect = "xMidYMid slice" if fit == "cover" else "xMidYMid meet"
+        # Check if preserve_aspect is enabled (default to meet for logos)
+        if style.get("preserve_aspect", False):
+            preserve_aspect = "xMidYMid meet"
+        else:
+            fit = style.get("fit", "cover")
+            preserve_aspect = "xMidYMid slice" if fit == "cover" else "xMidYMid meet"
 
         return f'<image href="{image_data}" x="{geom["x"]}" y="{geom["y"]}" width="{geom["width"]}" height="{geom["height"]}" preserveAspectRatio="{preserve_aspect}"/>'
 
@@ -764,8 +769,8 @@ class TemplateEngine:
         center_x = geom["x"] + geom["width"] / 2
         group_start_x = center_x - total_width / 2
 
-        # Vertical centering (spostato più in alto)
-        center_y = geom["y"] + geom["height"] / 2 - 10  # -10px per spostare in alto
+        # Vertical centering
+        center_y = geom["y"] + geom["height"] / 2
 
         # Render logo (if provided)
         if logo_image:
