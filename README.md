@@ -48,10 +48,23 @@ python gazzetta_multi_generator.py
 
 Lo script ti guiderà attraverso 6 step:
 
-#### **STEP 1: Parametri Evento**
+#### **STEP 1: Parametri Evento e Sport**
 ```
 Evento [Tennis - US Open]: Calcio - Champions League
 Prezzo [0,99€ / mese]: 14,99€ / anno
+
+Sport:
+  1. Calcio
+  2. Tennis
+  3. Pallavolo/Volley
+  4. Ciclismo
+  5. Golf
+  6. Formula 1/Moto GP
+  7. Generico
+  8. Altro (scrivi manualmente)
+
+Scegli sport [1-8]: 1
+✅ Sport selezionato: Calcio
 ```
 
 #### **STEP 2: Generazione Testi AI**
@@ -96,13 +109,24 @@ Scegli [1, 2, 3] (default=1): 2
 Path immagine opzionale (invio per saltare): images/calcio.jpg
 ✅ Immagine caricata: images/calcio.jpg
 
-🎨 Selezione background automatica...
-✅ Background: tennis - background/bg19.png
+🎨 Selezione background...
+
+Background disponibili per Calcio:
+  1. bg15.png - Champions League 1
+  2. bg16.png - Champions League 2
+  3. bg17.png - Champions League 3
+  4. bg18.png - Generico 1
+  5. bg19.png - Generico 2
+  6. bg20.png - Generico 3
+  7. bg22.png - Generico 4
+  8. bg23.png - Generico 5
+  9. bg24.png - Generico 6
+
+Scegli background [1-9] (default=1): 2
+✅ Background: bg16.png (Champions League 2)
 ```
 
-Il sistema seleziona automaticamente lo sfondo appropriato in base a:
-- **Sport**: calcio, tennis, volley
-- **Competition**: champions league, serie a, wimbledon, roland garros, us open, ecc.
+Il sistema mostra gli sfondi disponibili per lo sport selezionato nello Step 1, permettendo di scegliere quello più appropriato al contesto.
 
 #### **STEP 5: Selezione Template**
 ```
@@ -205,23 +229,48 @@ Il template engine supporta 9 tipi di componenti:
 7. **`logo`** - Logo G+ Gazzetta
 8. **`bullet_list`** - Lista puntata con checkmark
 
-## 🎯 Sfondi Supportati
+## 🎯 Sfondi Supportati per Sport
+
+### Generico
+- Sfondo 1 - bg01.png
+- Sfondo 2 - bg02.png
+- Sfondo 3 - bg03.png
 
 ### Calcio
-- Champions League (blu UEFA) - bg15.png
-- Serie A (azzurro) - bg01.png
-- Coppa Italia (verde) - bg16.png
+- Champions League 1 - bg15.png
+- Champions League 2 - bg16.png
+- Champions League 3 - bg17.png
+- Generico 1 - bg18.png
+- Generico 2 - bg19.png
+- Generico 3 - bg20.png
+- Generico 4 - bg22.png
+- Generico 5 - bg23.png
+- Generico 6 - bg24.png
 
 ### Tennis
-- Wimbledon (verde) - bg17.png
-- Roland Garros (rosso terra) - bg18.png
-- US Open (blu/giallo) - bg19.png
+- Wimbledon - bg11.png
+- US Open - bg12.png
 
-### Volley
-- Pallavolo generica (rosso) - bg20.png
+### Pallavolo/Volley
+- Volley 1 - bg06.png
+- Volley 2 - bg07.png
+- Volley 3 - bg08.png
+- Volley 4 - bg09.png
+- Volley 5 - bg10.png
 
-### Default
-- Sfondi neutri per sport non riconosciuti - bg01.png
+### Ciclismo
+- Ciclismo - bg14.png
+
+### Golf
+- Golf 1 - bg21.png
+- Golf 2 - bg13.png
+
+### Formula 1/Moto GP
+- F1/MotoGP 1 - bg25.png
+- F1/MotoGP 2 - bg26.png
+- F1/MotoGP 3 - bg27.png
+- F1/MotoGP 4 - bg28.png
+- F1/MotoGP 5 - bg29.png
 
 ## 🔧 Configurazione Avanzata
 
@@ -321,18 +370,28 @@ I template possono accedere a questi dati dinamici:
 
 ### Aggiungere Nuovi Sfondi
 
-Modifica l'array `backgrounds` in `gazzetta_multi_generator.py` (step4):
+Modifica il dizionario `backgrounds_catalog` in `gazzetta_multi_generator.py` (step4):
 
 ```python
-backgrounds = [
-    {
-        "sport": "basket",
-        "competition": "nba",
-        "image": "bg_nba.png",
-        "main_color": "#17408B",
-        "dark_color": "#0B1F45"
-    },
-    # ... altri sfondi
+backgrounds_catalog = {
+    "Basket": [
+        {"name": "NBA", "file": "bg_nba.png", "color": "#17408B"},
+        {"name": "Eurolega", "file": "bg_euroleague.png", "color": "#FF6600"}
+    ],
+    # ... altri sport
+}
+```
+
+Non dimenticare di aggiungere lo sport anche nel menu dello Step 1:
+
+```python
+sports = [
+    "Calcio",
+    "Tennis",
+    # ... altri sport
+    "Basket",  # <-- aggiungi qui
+    "Generico",
+    "Altro (scrivi manualmente)"
 ]
 ```
 

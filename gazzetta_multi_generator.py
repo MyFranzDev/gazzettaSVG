@@ -13,17 +13,43 @@ from template_engine import TemplateEngine, load_template, save_svg
 
 
 def step1_get_parameters():
-    """STEP 1: Raccolta parametri evento"""
+    """STEP 1: Raccolta parametri evento e sport"""
     print("\n" + "=" * 60)
-    print("STEP 1: PARAMETRI EVENTO")
+    print("STEP 1: PARAMETRI EVENTO E SPORT")
     print("=" * 60)
 
     event_type = input("Evento [Tennis - US Open]: ").strip() or "Tennis - US Open"
     price = input("Prezzo [0,99€ / mese]: ").strip() or "0,99€ / mese"
 
+    print("\nSport:")
+    sports = [
+        "Calcio",
+        "Tennis",
+        "Pallavolo/Volley",
+        "Ciclismo",
+        "Golf",
+        "Formula 1/Moto GP",
+        "Generico",
+        "Altro (scrivi manualmente)"
+    ]
+
+    for i, sport in enumerate(sports, 1):
+        print(f"  {i}. {sport}")
+
+    sport_choice = input(f"\nScegli sport [1-{len(sports)}]: ").strip() or "7"
+    sport_idx = int(sport_choice) - 1
+
+    if sport_idx == len(sports) - 1:  # "Altro"
+        selected_sport = input("Inserisci sport manualmente: ").strip() or "Generico"
+    else:
+        selected_sport = sports[sport_idx]
+
+    print(f"✅ Sport selezionato: {selected_sport}")
+
     return {
         "event_type": event_type,
-        "price": price
+        "price": price,
+        "sport": selected_sport
     }
 
 
@@ -148,41 +174,85 @@ def step4_load_resources(params):
     else:
         print("⏭️  Nessuna immagine caricata")
 
-    # Background selection
-    print("\n🎨 Selezione background automatica...")
+    # Background selection by sport
+    print("\n🎨 Selezione background...")
 
-    backgrounds = [
-        {"sport": "calcio", "competition": "champions league", "image": "bg15.png", "main_color": "#003399", "dark_color": "#001a4d"},
-        {"sport": "calcio", "competition": "serie a", "image": "bg01.png", "main_color": "#0066cc", "dark_color": "#003d7a"},
-        {"sport": "calcio", "competition": "coppa italia", "image": "bg16.png", "main_color": "#009933", "dark_color": "#005c1f"},
-        {"sport": "tennis", "competition": "wimbledon", "image": "bg17.png", "main_color": "#006633", "dark_color": "#003d1f"},
-        {"sport": "tennis", "competition": "roland garros", "image": "bg18.png", "main_color": "#cc3300", "dark_color": "#7a1f00"},
-        {"sport": "tennis", "competition": "us open", "image": "bg19.png", "main_color": "#0066cc", "dark_color": "#003d7a"},
-        {"sport": "volley", "competition": "", "image": "bg20.png", "main_color": "#cc0000", "dark_color": "#7a0000"},
-        {"sport": "default", "competition": "", "image": "bg01.png", "main_color": "#223047", "dark_color": "#141d2b"}
-    ]
+    # Background catalog organized by sport
+    backgrounds_catalog = {
+        "Generico": [
+            {"name": "Sfondo 1", "file": "bg01.png", "color": "#223047"},
+            {"name": "Sfondo 2", "file": "bg02.png", "color": "#223047"},
+            {"name": "Sfondo 3", "file": "bg03.png", "color": "#223047"}
+        ],
+        "Pallavolo/Volley": [
+            {"name": "Volley 1", "file": "bg06.png", "color": "#cc0000"},
+            {"name": "Volley 2", "file": "bg07.png", "color": "#cc0000"},
+            {"name": "Volley 3", "file": "bg08.png", "color": "#cc0000"},
+            {"name": "Volley 4", "file": "bg09.png", "color": "#cc0000"},
+            {"name": "Volley 5", "file": "bg10.png", "color": "#cc0000"}
+        ],
+        "Tennis": [
+            {"name": "Wimbledon", "file": "bg11.png", "color": "#006633"},
+            {"name": "US Open", "file": "bg12.png", "color": "#0066cc"}
+        ],
+        "Ciclismo": [
+            {"name": "Ciclismo", "file": "bg14.png", "color": "#FFD700"}
+        ],
+        "Calcio": [
+            {"name": "Champions League 1", "file": "bg15.png", "color": "#003399"},
+            {"name": "Champions League 2", "file": "bg16.png", "color": "#003399"},
+            {"name": "Champions League 3", "file": "bg17.png", "color": "#003399"},
+            {"name": "Generico 1", "file": "bg18.png", "color": "#0066cc"},
+            {"name": "Generico 2", "file": "bg19.png", "color": "#0066cc"},
+            {"name": "Generico 3", "file": "bg20.png", "color": "#0066cc"},
+            {"name": "Generico 4", "file": "bg22.png", "color": "#0066cc"},
+            {"name": "Generico 5", "file": "bg23.png", "color": "#0066cc"},
+            {"name": "Generico 6", "file": "bg24.png", "color": "#0066cc"}
+        ],
+        "Golf": [
+            {"name": "Golf 1", "file": "bg21.png", "color": "#228B22"},
+            {"name": "Golf 2", "file": "bg13.png", "color": "#228B22"}
+        ],
+        "Formula 1/Moto GP": [
+            {"name": "F1/MotoGP 1", "file": "bg25.png", "color": "#E10600"},
+            {"name": "F1/MotoGP 2", "file": "bg26.png", "color": "#E10600"},
+            {"name": "F1/MotoGP 3", "file": "bg27.png", "color": "#E10600"},
+            {"name": "F1/MotoGP 4", "file": "bg28.png", "color": "#E10600"},
+            {"name": "F1/MotoGP 5", "file": "bg29.png", "color": "#E10600"}
+        ]
+    }
 
-    event_lower = params["event_type"].lower()
+    # Get backgrounds for selected sport
+    selected_sport = params.get("sport", "Generico")
+    sport_backgrounds = backgrounds_catalog.get(selected_sport, backgrounds_catalog["Generico"])
 
-    chosen = None
-    for bg in backgrounds:
-        if bg["sport"] in event_lower and (not bg["competition"] or bg["competition"] in event_lower):
-            chosen = bg
-            break
+    print(f"\nBackground disponibili per {selected_sport}:")
+    for i, bg in enumerate(sport_backgrounds, 1):
+        print(f"  {i}. {bg['file']} - {bg['name']}")
 
-    if not chosen:
-        chosen = backgrounds[-1]  # default
+    bg_choice = input(f"\nScegli background [1-{len(sport_backgrounds)}] (default=1): ").strip() or "1"
+    chosen_bg = sport_backgrounds[int(bg_choice) - 1]
 
+    # Load and encode background
     try:
-        bg_path = os.path.join("background", chosen["image"])
+        bg_path = os.path.join("background", chosen_bg["file"])
         with open(bg_path, "rb") as f:
             b64 = base64.b64encode(f.read()).decode("utf-8")
-            mime = "image/jpeg" if chosen["image"].endswith((".jpg", ".jpeg")) else "image/png"
-            chosen["image"] = f"data:{mime};base64,{b64}"
-            print(f"✅ Background: {chosen['sport']} - {bg_path}")
+            mime = "image/jpeg" if chosen_bg["file"].endswith((".jpg", ".jpeg")) else "image/png"
+
+            chosen = {
+                "image": f"data:{mime};base64,{b64}",
+                "main_color": chosen_bg["color"],
+                "dark_color": chosen_bg["color"]
+            }
+            print(f"✅ Background: {chosen_bg['file']} ({chosen_bg['name']})")
     except FileNotFoundError:
-        print(f"⚠️ File {chosen['image']} non trovato, sfondo disabilitato")
-        chosen["image"] = None
+        print(f"⚠️ File {chosen_bg['file']} non trovato, sfondo disabilitato")
+        chosen = {
+            "image": None,
+            "main_color": chosen_bg["color"],
+            "dark_color": chosen_bg["color"]
+        }
 
     return {
         "user_image": user_image,
