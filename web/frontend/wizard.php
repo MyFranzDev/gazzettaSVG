@@ -130,11 +130,9 @@ $mockTextVariants = [
 ];
 
 $mockTemplates = [
-    ['id' => '300x250', 'name' => 'Medium Rectangle', 'dimensions' => '300x250'],
     ['id' => '728x90', 'name' => 'Leaderboard', 'dimensions' => '728x90'],
-    ['id' => '300x600', 'name' => 'Half Page', 'dimensions' => '300x600'],
-    ['id' => '320x50', 'name' => 'Mobile Banner', 'dimensions' => '320x50'],
-    ['id' => '300x480', 'name' => 'Vertical', 'dimensions' => '300x480'],
+    ['id' => '1200x1200', 'name' => 'Square Social Media', 'dimensions' => '1200x1200'],
+    ['id' => '1920x1080', 'name' => 'Full HD Landscape', 'dimensions' => '1920x1080'],
 ];
 ?>
 <!DOCTYPE html>
