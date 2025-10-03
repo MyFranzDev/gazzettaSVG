@@ -6,6 +6,7 @@ Generatore automatico di banner SVG promozionali per Gazzetta dello Sport con in
 
 - **🚀 Multi-Banner Generation**: 1 input → N banner in formati diversi
 - **📐 Template-Driven Architecture**: Layout definiti in JSON, zero duplicazione codice
+- **🌐 Web Interface**: Frontend PHP intuitivo con wizard 5-step
 - **🤖 AI-Powered Copywriting**: Generazione automatica di 3 varianti di testi (FOMO, Esclusiva, Soft) tramite OpenAI
 - **🎨 Auto Background Selection**: Selezione automatica dello sfondo in base a sport e competizione
 - **🔤 Font Embedded**: Font Oswald e Roboto incorporati nel SVG (nessuna dipendenza esterna)
@@ -38,7 +39,62 @@ export OPENAI_API_KEY='your-openai-api-key-here'
 
 ## 💻 Utilizzo
 
-### Generazione Multi-Banner (CONSIGLIATO)
+### Interfaccia Web (CONSIGLIATO) 🌐
+
+L'applicazione include un'interfaccia web completa con wizard interattivo a 5 step.
+
+#### Avvio Locale
+
+```bash
+cd web/frontend
+php -S localhost:8000
+```
+
+Apri il browser su `http://localhost:8000` e accedi con password: `touchlabs2`
+
+#### Wizard 5-Step
+
+**Step 1: Evento**
+- Inserisci nome evento e prezzo
+- Seleziona stile grafico (2 varianti con preview visiva)
+- Scegli lo sport dalla griglia con emoji
+
+**Step 2: Risorse**
+- Logo Gazzetta precaricato (bianco/nero) con possibilità di override
+- Visualizza font disponibili (Oswald Bold, Roboto Bold, Roboto Regular)
+- Carica immagine opzionale
+- Seleziona sfondo filtrato per sport
+- [DEMO] Genera sfondo con AI (disabilitato in demo)
+
+**Step 3: Testi**
+- Visualizza 3 varianti AI-generated per ogni campo (header, titolo, sottotitolo, CTA)
+- Oppure scrivi testo personalizzato
+- Associa font specifico per ogni campo
+
+**Step 4: Genera**
+- Seleziona formati banner da generare
+- Checkbox multipli con "Seleziona tutti"
+- Anteprima count banner selezionati
+
+**Step 5: Download**
+- Riepilogo configurazione
+- Lista banner generati
+- Download individuale o ZIP completo
+
+#### Caratteristiche Web Interface
+
+- ✅ Session-based navigation con progress bar cliccabile
+- ✅ Validazione step-by-step (bottoni disabilitati fino a completamento)
+- ✅ Design responsive con tema Gazzetta (navy blue + gold)
+- ✅ Snackbar notifications per funzioni demo
+- ✅ LocalStorage per history AI backgrounds
+- ✅ Mock data per sviluppo frontend standalone
+
+---
+
+### CLI - Generazione Multi-Banner
+
+Per uso da linea di comando:
 
 ```bash
 python gazzetta_multi_generator.py
@@ -166,9 +222,25 @@ Opzioni:
 
 ```
 .
-├── gazzetta_multi_generator.py  # Script principale multi-banner
+├── gazzetta_multi_generator.py  # Script principale multi-banner (CLI)
 ├── template_engine.py           # Motore rendering generico
 ├── gazzetta_svg_generator.py    # Script legacy (singolo banner)
+├── web/                         # Applicazione web
+│   └── frontend/                # Frontend PHP
+│       ├── index.php            # Login page
+│       ├── wizard.php           # Wizard principale
+│       ├── logout.php           # Logout handler
+│       ├── styles.css           # Stili Gazzetta theme
+│       ├── script.js            # Utility JavaScript
+│       ├── steps/               # Step wizard
+│       │   ├── step1.php        # Evento e sport
+│       │   ├── step3.php        # Testi AI
+│       │   ├── step4.php        # Risorse e sfondo
+│       │   ├── step5.php        # Selezione formati
+│       │   └── step6.php        # Download
+│       ├── backgrounds/         # 31 sfondi PNG
+│       ├── logos/               # Loghi Gazzetta (bianco/nero)
+│       └── fonts/               # Font woff2
 ├── templates/                   # Template JSON
 │   ├── 184x90.json              # Small banner
 │   ├── 285x130.json             # Medium banner
@@ -181,15 +253,15 @@ Opzioni:
 │   ├── 350x250.json             # Medium
 │   ├── 728x90.json              # Leaderboard
 │   └── 735x280.json             # Large billboard
-├── font/                        # Font embedded
+├── font/                        # Font embedded per CLI
 │   ├── Oswald-Bold.woff2
 │   ├── Roboto-Regular.woff2
 │   └── Roboto-Bold.woff2
-├── background/                  # Sfondi disponibili
+├── background/                  # Sfondi disponibili per CLI
 │   ├── bg01.png
 │   ├── bg15.png (Champions League)
 │   ├── bg19.png (US Open)
-│   └── ...
+│   └── ... (31 totali)
 ├── images/                      # Immagini da usare nei banner
 │   └── calcio.jpg
 └── output/                      # Banner generati
