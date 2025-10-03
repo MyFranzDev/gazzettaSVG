@@ -15,10 +15,10 @@ Generatore automatico di banner SVG promozionali per Gazzetta dello Sport con in
 
 - Python 3.7+
 - OpenAI API Key
-- Font files (opzionali):
-  - `Oswald-Bold.woff2`
-  - `Roboto-Regular.woff2`
-  - `Roboto-Bold.woff2`
+- Struttura cartelle:
+  - `font/` - Font files (Oswald-Bold.woff2, Roboto-Regular.woff2, Roboto-Bold.woff2)
+  - `background/` - Immagini di sfondo (bg01.png, bg15.png, ecc.)
+  - `images/` - Immagini da inserire nei banner
 
 ## 🚀 Installazione
 
@@ -87,10 +87,22 @@ Tutti i componenti vengono assemblati in un template JSON finale.
 #### **STEP 6: Rendering SVG**
 Il banner viene generato come file SVG: `banner.svg`
 
-## 📁 Struttura Output
+## 📁 Struttura Progetto
 
 ```
-banner.svg          # File SVG generato (pronto per uso)
+.
+├── gazzetta_svg_generator.py   # Script principale
+├── font/                        # Font embedded
+│   ├── Oswald-Bold.woff2
+│   ├── Roboto-Regular.woff2
+│   └── Roboto-Bold.woff2
+├── background/                  # Sfondi disponibili
+│   ├── bg01.png
+│   ├── bg15.png (Champions League)
+│   └── ...
+├── images/                      # Immagini da usare nei banner
+│   └── calcio.jpg
+└── banner.svg                   # Output generato
 ```
 
 ## 🎨 Template Disponibili
@@ -209,12 +221,15 @@ export OPENAI_API_KEY='your-key'
 ### Font non trovati
 Lo script funziona anche senza font (usa font di sistema come fallback)
 
-Per migliore qualità, scarica i font da [Google Fonts](https://fonts.google.com/):
+Per migliore qualità, scarica i font da [Google Fonts](https://fonts.google.com/) e inseriscili nella cartella `font/`:
 - [Oswald](https://fonts.google.com/specimen/Oswald)
 - [Roboto](https://fonts.google.com/specimen/Roboto)
 
 ### Sfondo non trovato
-Assicurati che i file PNG degli sfondi siano nella stessa directory dello script, oppure modifica i path in `step4_pick_background()`.
+Assicurati che i file PNG degli sfondi siano nella cartella `background/`.
+
+### Immagine non trovata
+Le immagini da inserire nei banner vanno posizionate nella cartella `images/`.
 
 ## 🤝 Contributing
 

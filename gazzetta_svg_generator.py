@@ -294,7 +294,10 @@ def step3_select_template_and_texts(texts):
             with open(image_path, "rb") as f:
                 uploaded_bytes = f.read()
                 uploaded_b64 = base64.b64encode(uploaded_bytes).decode("utf-8")
-                uploaded_image = f"data:image/png;base64,{uploaded_b64}"
+                # Rileva formato immagine
+                ext = image_path.lower().split('.')[-1]
+                mime_type = "image/jpeg" if ext in ["jpg", "jpeg"] else "image/png"
+                uploaded_image = f"data:{mime_type};base64,{uploaded_b64}"
             print(f"✅ Immagine caricata: {image_path}")
         except Exception as e:
             print(f"⚠️  Errore caricamento immagine: {e}")
@@ -387,7 +390,8 @@ def step4_pick_background(event_type):
 
     # Converti immagine in base64 (se esiste)
     try:
-        with open(chosen["image"], "rb") as f:
+        bg_path = os.path.join("background", chosen["image"])
+        with open(bg_path, "rb") as f:
             b64 = base64.b64encode(f.read()).decode("utf-8")
             if chosen["image"].endswith(".png"):
                 mime = "image/png"
@@ -459,7 +463,8 @@ def step6_render_svg(template, width, height, out_path="banner.svg"):
 
     # Carica font embedded
     def font_to_base64(path):
-        with open(path, "rb") as f:
+        full_path = os.path.join("font", path)
+        with open(full_path, "rb") as f:
             return base64.b64encode(f.read()).decode("utf-8")
 
     # Prova a caricare i font (fallback se non esistono)
@@ -585,7 +590,8 @@ def step6_render_svg(template, width, height, out_path="banner.svg"):
 
     # --- BODY BACKGROUND ---
     if body_bg_image:
-        svg.append(f'<image href="{esc(body_bg_image)}" x="0" y="{body_y}" width="{W}" height="{body_h}" preserveAspectRatio="xMidYMid slice"/>')
+        # body_bg_image è già un data URI (convertito nello STEP 4)
+        svg.append(f'<image href="{body_bg_image}" x="0" y="{body_y}" width="{W}" height="{body_h}" preserveAspectRatio="xMidYMid slice"/>')
     else:
         svg.append(f'<rect x="0" y="{body_y}" width="{W}" height="{body_h}" fill="none"/>')
 
