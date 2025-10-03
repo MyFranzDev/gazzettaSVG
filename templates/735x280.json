@@ -1,0 +1,126 @@
+{
+  "name": "Large Billboard 735x280",
+  "width": 735,
+  "height": 280,
+  "components": [
+    {
+      "id": "background",
+      "type": "background_layer",
+      "geometry": {
+        "x": 0,
+        "y": 0,
+        "width": "100%",
+        "height": "100%"
+      }
+    },
+    {
+      "id": "smartphone_left",
+      "type": "smartphone_mockup",
+      "content_source": "user_image",
+      "geometry": {
+        "x": 20,
+        "y": 70,
+        "width": 100,
+        "height": 185
+      },
+      "style": {
+        "frame_color": "#1a1a1a",
+        "border_radius": 25,
+        "show_label": true,
+        "label_text": "SPECIALE US OPEN",
+        "show_gplus_badge": true
+      }
+    },
+    {
+      "id": "main_title",
+      "type": "text_only",
+      "content_source": "main_title",
+      "geometry": {
+        "x": 140,
+        "y": 25,
+        "width": 450,
+        "height": 50
+      },
+      "style": {
+        "text_color": "#FFFFFF",
+        "font_size": 28,
+        "font_family": "Oswald Bold",
+        "alignment": "center"
+      }
+    },
+    {
+      "id": "subtitle",
+      "type": "text_only",
+      "content_source": "subtitle",
+      "geometry": {
+        "x": 140,
+        "y": 75,
+        "width": 450,
+        "height": 45
+      },
+      "style": {
+        "text_color": "#FFD700",
+        "font_size": 26,
+        "font_family": "Oswald Bold",
+        "alignment": "center"
+      }
+    },
+    {
+      "id": "bullet_list",
+      "type": "bullet_list",
+      "geometry": {
+        "x": 160,
+        "y": 130,
+        "width": 410,
+        "height": 100
+      },
+      "items": [
+        "bullet1",
+        "bullet2",
+        "bullet3"
+      ],
+      "style": {
+        "text_color": "#FFFFFF",
+        "font_size": 14,
+        "font_family": "Roboto Regular",
+        "line_spacing": 22
+      }
+    },
+    {
+      "id": "cta",
+      "type": "cta_button",
+      "content_source": "cta_text",
+      "geometry": {
+        "x": 250,
+        "y": 230,
+        "width": 230,
+        "height": 40
+      },
+      "style": {
+        "background": "#FFD700",
+        "text_color": "#000000",
+        "font_size": 16,
+        "font_family": "Roboto Bold",
+        "border_radius": 20
+      }
+    },
+    {
+      "id": "smartphone_right",
+      "type": "smartphone_mockup",
+      "content_source": "user_image",
+      "geometry": {
+        "x": 615,
+        "y": 70,
+        "width": 100,
+        "height": 185
+      },
+      "style": {
+        "frame_color": "#1a1a1a",
+        "border_radius": 25,
+        "show_label": true,
+        "label_text": "SPECIALE US OPEN",
+        "show_gplus_badge": true
+      }
+    }
+  ]
+}
