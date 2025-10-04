@@ -65,10 +65,10 @@
       "logo_source": "logo_small_dark",
       "text_source": "header_title_combined",
       "geometry": {
-        "x": 0,
+        "x": 470,
         "y": 0,
-        "width": 1920,
-        "height": 140
+        "width": 980,
+        "height": 110
       },
       "style": {
         "text_color": "#FFFFFF",

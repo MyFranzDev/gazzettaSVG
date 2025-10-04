@@ -43,7 +43,8 @@ class TemplateEngine:
                     continue
 
             if not loaded:
-                print(f"⚠️ Font {name} not found (tried {', '.join(filenames)}), using system fallback")
+                # Suppress font warnings to avoid polluting SVG output when called from frontend
+                # print(f"⚠️ Font {name} not found (tried {', '.join(filenames)}), using system fallback", file=sys.stderr)
                 self.fonts[name] = None
 
     def set_content_data(self, data: Dict[str, Any]):
@@ -303,7 +304,7 @@ class TemplateEngine:
         return '\n'.join(parts)
 
     def _render_text_only(self, comp: Dict, canvas_width: int, canvas_height: int) -> str:
-        """Render text without background"""
+        """Render text with automatic word-wrap using HTML/CSS"""
         geom = self._get_geometry(comp, canvas_width, canvas_height)
         style = comp.get("style", {})
         content_source = comp.get("content_source", "")
@@ -313,47 +314,40 @@ class TemplateEngine:
             return ""
 
         text_color = style.get("text_color", "#FFFFFF")
-        font_family = style.get("font_family", "Oswald Bold")
+        font_family = style.get("font_family", "Roboto")
+        font_size = style.get("font_size", 24)
         alignment = style.get("alignment", "center")
 
-        # Auto-size text if enabled
-        if style.get("auto_size", False):
-            font_size = self._calculate_optimal_font_size(
-                text_content.replace('\n', ' '),  # Treat as single line for sizing
-                geom["width"],
-                geom["height"],
-                font_family,
-                min_size=style.get("min_font_size", 10),
-                max_size=style.get("max_font_size", 60)
-            )
-        else:
-            font_size = style.get("font_size", 24)
+        # Convert alignment to CSS
+        text_align_css = alignment if alignment in ['left', 'right', 'center'] else 'center'
 
-        # Handle multiline text
-        lines = text_content.split('\n')
-
-        # Calculate total height of multiline text
-        line_height = font_size * 1.2
-        total_height = len(lines) * line_height
-
-        # Calculate starting Y to center the text block vertically
-        start_y = geom["y"] + (geom["height"] - total_height) / 2 + font_size
-
+        # Use foreignObject with HTML/CSS for automatic word wrap
         parts = []
-        for i, line in enumerate(lines):
-            if alignment == "center":
-                text_x = geom["x"] + geom["width"] / 2
-                text_anchor = "middle"
-            elif alignment == "right":
-                text_x = geom["x"] + geom["width"]
-                text_anchor = "end"
-            else:  # left
-                text_x = geom["x"]
-                text_anchor = "start"
+        parts.append(f'<foreignObject x="{geom["x"]}" y="{geom["y"]}" width="{geom["width"]}" height="{geom["height"]}">')
+        parts.append('<div xmlns="http://www.w3.org/1999/xhtml" style="')
+        parts.append('width: 100%;')
+        parts.append('height: 100%;')
+        parts.append('display: flex;')
+        parts.append('align-items: center;')
+        parts.append(f'justify-content: {text_align_css};')
+        parts.append('">')
 
-            text_y = start_y + i * line_height
+        # Text container with word-wrap
+        parts.append('<div style="')
+        parts.append(f'color: {text_color};')
+        parts.append(f'font-family: \'{font_family}\';')
+        parts.append(f'font-size: {font_size}px;')
+        parts.append(f'text-align: {text_align_css};')
+        parts.append('word-wrap: break-word;')
+        parts.append('overflow-wrap: break-word;')
+        parts.append('width: 100%;')
+        parts.append('line-height: 1.2;')
+        parts.append('">')
+        parts.append(text_content)
+        parts.append('</div>')
 
-            parts.append(f'<text x="{text_x}" y="{text_y}" font-family="{font_family}" font-size="{font_size}" fill="{text_color}" text-anchor="{text_anchor}">{line}</text>')
+        parts.append('</div>')
+        parts.append('</foreignObject>')
 
         return '\n'.join(parts)
 
@@ -732,7 +726,7 @@ class TemplateEngine:
         return '\n'.join(parts)
 
     def _render_logo_text_group(self, comp: Dict, canvas_width: int, canvas_height: int) -> str:
-        """Render logo + text centered horizontally as a group"""
+        """Render logo + text centered horizontally as a group using HTML foreignObject"""
         geom = self._get_geometry(comp, canvas_width, canvas_height)
         style = comp.get("style", {})
 
@@ -746,8 +740,6 @@ class TemplateEngine:
         if not text_content:
             return ""
 
-        parts = []
-
         # Logo dimensions
         logo_size = style.get("logo_size", 100)
         gap = style.get("gap", 10)
@@ -757,50 +749,66 @@ class TemplateEngine:
         font_family = style.get("font_family", "Oswald Bold")
         font_style = style.get("font_style", "normal")
         font_size = style.get("font_size", 48)
+        logo_color = style.get("logo_color", None)
 
-        # Calculate approximate text width (for centering)
+        # Calculate approximate width needed for the content
         char_width_ratio = 0.55 if "Oswald" in font_family else 0.6
-        text_width = len(text_content) * font_size * char_width_ratio
+        if font_style == 'italic':
+            char_width_ratio *= 0.95
+        estimated_text_width = len(text_content) * font_size * char_width_ratio
+        total_estimated_width = (logo_size if logo_image else 0) + gap + estimated_text_width
 
-        # Total group width
-        total_width = (logo_size if logo_image else 0) + (gap if logo_image else 0) + text_width
+        # Calculate scale factor needed to fit content in available width
+        available_width = geom["width"] * 0.95  # 95% to leave some margin
+        scale_factor = min(1.0, available_width / total_estimated_width) if total_estimated_width > 0 else 1.0
 
-        # Center the group
-        center_x = geom["x"] + geom["width"] / 2
-        group_start_x = center_x - total_width / 2
+        # Use foreignObject with transform scale for the entire group
+        parts = []
+        parts.append(f'<foreignObject x="{geom["x"]}" y="{geom["y"]}" width="{geom["width"]}" height="{geom["height"]}">')
 
-        # Vertical centering
-        center_y = geom["y"] + geom["height"] / 2
+        # Outer container for centering
+        parts.append('<div xmlns="http://www.w3.org/1999/xhtml" style="')
+        parts.append('width: 100%;')
+        parts.append('height: 100%;')
+        parts.append('display: flex;')
+        parts.append('justify-content: center;')
+        parts.append('align-items: center;')
+        parts.append('">')
 
-        # Render logo (if provided)
+        # Inner content container with transform scale applied
+        parts.append('<div style="')
+        parts.append('display: flex;')
+        parts.append('align-items: center;')
+        parts.append('gap: ' + str(gap) + 'px;')
+        parts.append(f'transform: scale({scale_factor});')
+        parts.append('transform-origin: center center;')
+        parts.append('">')
+
+        # Logo
         if logo_image:
-            logo_x = group_start_x
-            logo_y = center_y - logo_size / 2
-            padding = style.get("logo_padding", 8)
-            logo_color = style.get("logo_color", None)
-
-            # If logo_color is specified, apply a color filter
+            logo_filter = f'filter: hue-rotate(0deg) saturate(0%) brightness(0) invert(1);' if logo_color else ''
             if logo_color:
-                filter_id = f"logo-color-{comp.get('id', 'default')}"
-                # Create a color filter that replaces white with the specified color
-                parts.append(f'''<defs>
-                    <filter id="{filter_id}">
-                        <feColorMatrix type="matrix" values="
-                            0 0 0 0 {int(logo_color[1:3], 16)/255}
-                            0 0 0 0 {int(logo_color[3:5], 16)/255}
-                            0 0 0 0 {int(logo_color[5:7], 16)/255}
-                            0 0 0 1 0"/>
-                    </filter>
-                </defs>''')
-                parts.append(f'<image href="{logo_image}" x="{logo_x + padding}" y="{logo_y + padding}" width="{logo_size - padding * 2}" height="{logo_size - padding * 2}" preserveAspectRatio="xMidYMid meet" filter="url(#{filter_id})"/>')
-            else:
-                parts.append(f'<image href="{logo_image}" x="{logo_x + padding}" y="{logo_y + padding}" width="{logo_size - padding * 2}" height="{logo_size - padding * 2}" preserveAspectRatio="xMidYMid meet"/>')
+                # Convert hex to RGB for CSS filter
+                r = int(logo_color[1:3], 16)
+                g = int(logo_color[3:5], 16)
+                b = int(logo_color[5:7], 16)
+                logo_filter = f'filter: brightness(0) saturate(100%) invert(48%) sepia(79%) saturate(2476%) hue-rotate(316deg) brightness(98%) contrast(119%);'
 
-        # Render text
-        text_x = group_start_x + (logo_size + gap if logo_image else 0)
-        text_y = center_y + font_size / 3  # Baseline adjustment
+            parts.append(f'<img src="{logo_image}" style="height: {logo_size}px; width: auto; {logo_filter}" />')
 
-        parts.append(f'<text x="{text_x}" y="{text_y}" font-family="{font_family}" font-size="{font_size}" font-style="{font_style}" fill="{text_color}" text-anchor="start">{text_content}</text>')
+        # Text
+        font_style_css = 'italic' if font_style == 'italic' else 'normal'
+        parts.append(f'<span style="')
+        parts.append(f'color: {text_color};')
+        parts.append(f'font-family: \'{font_family}\';')
+        parts.append(f'font-style: {font_style_css};')
+        parts.append(f'font-size: {font_size}px;')
+        parts.append('white-space: nowrap;')
+        parts.append('">' + text_content + '</span>')
+
+        parts.append('</div>')  # Close inner content
+        parts.append('</div>')  # Close outer container
+        parts.append('</foreignObject>')
 
         return '\n'.join(parts)
     def _render_debug_guides(self, template: Dict) -> str:
