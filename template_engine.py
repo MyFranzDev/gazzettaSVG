@@ -185,7 +185,7 @@ class TemplateEngine:
         return '\n'.join(parts)
 
     def _render_text_block(self, comp: Dict, canvas_width: int, canvas_height: int) -> str:
-        """Render text block with optional header and main text (both auto-sized to fill space)"""
+        """Render text block with header and main text using HTML/CSS with word-wrap"""
         geom = self._get_geometry(comp, canvas_width, canvas_height)
         style = comp.get("style", {})
 
@@ -196,115 +196,70 @@ class TemplateEngine:
         header_text = self._get_content(header_source) if header_source else ""
         main_text = self._get_content(content_source)
 
-        parts = []
-
-        # Optional background
-        if style.get("background"):
-            bg_color = style.get("background")
-            parts.append(f'<rect x="{geom["x"]}" y="{geom["y"]}" width="{geom["width"]}" height="{geom["height"]}" fill="{bg_color}"/>')
+        if not header_text and not main_text:
+            return ""
 
         # Text styling
         text_color = style.get("text_color", "#FFFFFF")
         alignment = style.get("alignment", "center")
-        text_anchor = "middle" if alignment == "center" else "start"
+        bg_color = style.get("background", None)
 
-        # Calculate available space
-        total_height = geom["height"]
-        total_width = geom["width"]
+        header_font_family = style.get("header_font_family", "Roboto Bold")
+        header_font_size = style.get("header_font_size", 24)
+        main_font_family = style.get("font_family", "Oswald Bold")
+        main_font_size = style.get("font_size", 48)
 
-        # If we have both header and main text, split space between them
-        if header_text and main_text:
-            # Allocate space: 40% for header, 60% for main text
-            header_height_alloc = total_height * 0.40
-            main_height_alloc = total_height * 0.60
+        # Convert alignment to CSS
+        text_align_css = alignment if alignment in ['left', 'right', 'center'] else 'center'
 
-            # Auto-size both texts to fill their allocated space
-            header_font_family = style.get("header_font_family", "Roboto Bold")
-            main_font_family = style.get("font_family", "Oswald Bold")
+        # Use foreignObject with HTML/CSS
+        parts = []
+        parts.append(f'<foreignObject x="{geom["x"]}" y="{geom["y"]}" width="{geom["width"]}" height="{geom["height"]}">')
 
-            header_font_size = self._calculate_optimal_font_size(
-                header_text,
-                total_width,
-                header_height_alloc,
-                header_font_family,
-                min_size=10,
-                max_size=style.get("max_header_font_size", 30),
-                padding_ratio=0.90
-            )
+        # Container div
+        align_items_css = {'left': 'flex-start', 'right': 'flex-end', 'center': 'center'}.get(alignment, 'center')
+        parts.append('<div xmlns="http://www.w3.org/1999/xhtml" style="')
+        parts.append('width: 100%; height: 100%;')
+        parts.append('display: flex; flex-direction: column;')
+        parts.append('justify-content: center;')
+        parts.append(f'align-items: {align_items_css};')
+        if bg_color:
+            parts.append(f'background: {bg_color};')
+        parts.append('">')
 
-            main_font_size = self._calculate_optimal_font_size(
-                main_text,
-                total_width,
-                main_height_alloc,
-                main_font_family,
-                min_size=style.get("min_font_size", 18),
-                max_size=style.get("max_font_size", 60),
-                padding_ratio=0.90
-            )
-
-            # Calculate total actual content height with some spacing
-            spacing = 3
-            total_content_height = header_font_size + spacing + main_font_size
-
-            # Center the entire block vertically
-            start_y = geom["y"] + (total_height - total_content_height) / 2
-
-            # Position texts
-            header_y = start_y + header_font_size * 0.85
-            main_y = start_y + header_font_size + spacing + main_font_size * 0.85
-
-        elif header_text:
-            # Only header, use full space
-            header_font_family = style.get("header_font_family", "Roboto Bold")
-            header_font_size = self._calculate_optimal_font_size(
-                header_text,
-                total_width,
-                total_height,
-                header_font_family,
-                min_size=10,
-                max_size=style.get("max_header_font_size", 30),
-                padding_ratio=0.90
-            )
-            header_y = geom["y"] + geom["height"] / 2 + header_font_size / 3
-            main_font_size = 0
-
-        elif main_text:
-            # Only main text, use full space
-            main_font_family = style.get("font_family", "Oswald Bold")
-            main_font_size = self._calculate_optimal_font_size(
-                main_text,
-                total_width,
-                total_height,
-                main_font_family,
-                min_size=style.get("min_font_size", 18),
-                max_size=style.get("max_font_size", 60),
-                padding_ratio=0.90
-            )
-            main_y = geom["y"] + geom["height"] / 2 + main_font_size / 3
-            header_font_size = 0
-
-        else:
-            header_font_size = 0
-            main_font_size = 0
-
-        # Render header
+        # Header
         if header_text:
-            header_font_family = style.get("header_font_family", "Roboto Bold")
-            header_x = geom["x"] + geom["width"] / 2 if alignment == "center" else geom["x"]
-
-            parts.append(f'<text x="{header_x}" y="{header_y}" font-family="{header_font_family}" font-size="{header_font_size}" fill="{text_color}" text-anchor="{text_anchor}">{header_text}</text>')
+            parts.append(f'<div style="')
+            parts.append(f'color: {text_color};')
+            parts.append(f'font-family: \'{header_font_family}\';')
+            parts.append(f'font-size: {header_font_size}px;')
+            parts.append(f'text-align: {text_align_css};')
+            parts.append('word-wrap: break-word;')
+            parts.append('width: 100%;')
+            parts.append('line-height: 1.2;')
+            parts.append('">' + header_text + '</div>')
 
         # Main text
         if main_text:
-            main_font_family = style.get("font_family", "Oswald Bold")
-            main_x = geom["x"] + geom["width"] / 2 if alignment == "center" else geom["x"]
+            parts.append(f'<div style="')
+            parts.append(f'color: {text_color};')
+            parts.append(f'font-family: \'{main_font_family}\';')
+            parts.append(f'font-size: {main_font_size}px;')
+            parts.append(f'text-align: {text_align_css};')
+            parts.append('word-wrap: break-word;')
+            parts.append('width: 100%;')
+            parts.append('line-height: 1.2;')
+            if header_text:
+                parts.append('margin-top: 10px;')
+            parts.append('">' + main_text + '</div>')
 
-            parts.append(f'<text x="{main_x}" y="{main_y}" font-family="{main_font_family}" font-size="{main_font_size}" fill="{text_color}" text-anchor="{text_anchor}">{main_text}</text>')
+        parts.append('</div>')
+        parts.append('</foreignObject>')
 
         return '\n'.join(parts)
 
     def _render_text_only(self, comp: Dict, canvas_width: int, canvas_height: int) -> str:
-        """Render text with automatic word-wrap using HTML/CSS"""
+        """Render text with automatic word-wrap and auto-fit using HTML/CSS"""
         geom = self._get_geometry(comp, canvas_width, canvas_height)
         style = comp.get("style", {})
         content_source = comp.get("content_source", "")
@@ -321,18 +276,22 @@ class TemplateEngine:
         # Convert alignment to CSS
         text_align_css = alignment if alignment in ['left', 'right', 'center'] else 'center'
 
-        # Use foreignObject with HTML/CSS for automatic word wrap
+        # Use foreignObject with HTML/CSS - browser handles wrapping and we use CSS zoom/scale
         parts = []
         parts.append(f'<foreignObject x="{geom["x"]}" y="{geom["y"]}" width="{geom["width"]}" height="{geom["height"]}">')
+
+        # Container that will auto-scale content to fit
         parts.append('<div xmlns="http://www.w3.org/1999/xhtml" style="')
         parts.append('width: 100%;')
         parts.append('height: 100%;')
         parts.append('display: flex;')
         parts.append('align-items: center;')
         parts.append(f'justify-content: {text_align_css};')
+        parts.append('position: relative;')
         parts.append('">')
 
-        # Text container with word-wrap
+        # Inner text that will be measured and scaled by browser
+        # Use max-width and max-height with object-fit concept
         parts.append('<div style="')
         parts.append(f'color: {text_color};')
         parts.append(f'font-family: \'{font_family}\';')
@@ -340,8 +299,14 @@ class TemplateEngine:
         parts.append(f'text-align: {text_align_css};')
         parts.append('word-wrap: break-word;')
         parts.append('overflow-wrap: break-word;')
-        parts.append('width: 100%;')
+        parts.append(f'max-width: {geom["width"]}px;')
+        parts.append(f'max-height: {geom["height"]}px;')
         parts.append('line-height: 1.2;')
+        parts.append('width: fit-content;')
+        parts.append('height: fit-content;')
+        # CSS container queries would be ideal but not widely supported in SVG rendering
+        # Use viewport-based scaling as fallback
+        parts.append(f'font-size: min({font_size}px, {geom["height"] * 0.4}px);')
         parts.append('">')
         parts.append(text_content)
         parts.append('</div>')
@@ -450,44 +415,53 @@ class TemplateEngine:
         return max(min_size, min(optimal_size, max_size))
 
     def _render_cta_button(self, comp: Dict, canvas_width: int, canvas_height: int) -> str:
-        """Render CTA button"""
+        """Render CTA button with auto-fit using HTML/CSS"""
         geom = self._get_geometry(comp, canvas_width, canvas_height)
         style = comp.get("style", {})
         content_source = comp.get("content_source", "")
 
         text_content = self._get_content(content_source)
 
-        parts = []
-
-        # Button background
+        # Button styling
         bg_color = style.get("background", "#FFD700")
-        border_radius = style.get("border_radius", 25)
-
-        parts.append(f'<rect x="{geom["x"]}" y="{geom["y"]}" width="{geom["width"]}" height="{geom["height"]}" rx="{border_radius}" ry="{border_radius}" fill="{bg_color}"/>')
-
-        # Button text with auto-sizing
+        border_radius = style.get("border_radius", 8)
         text_color = style.get("text_color", "#000000")
         font_family = style.get("font_family", "Roboto Bold")
-        font_style = style.get("font_style", "normal")  # normal or italic
+        font_style = style.get("font_style", "normal")
+        font_size = style.get("font_size", 20)
 
-        # Get base font size or calculate optimal
-        if style.get("auto_size", True):
-            font_size = self._calculate_optimal_font_size(
-                text_content,
-                geom["width"],
-                geom["height"],
-                font_family,
-                min_size=style.get("min_font_size", 10),
-                max_size=style.get("max_font_size", 60),
-                padding_ratio=0.75  # 25% padding for buttons
-            )
-        else:
-            font_size = style.get("font_size", 18)
+        # Calculate scale factor for auto-fit
+        char_width_ratio = 0.6
+        estimated_width = len(text_content) * font_size * char_width_ratio
+        available_width = geom["width"] * 0.8  # 20% padding
+        scale_factor = min(1.0, available_width / estimated_width) if estimated_width > 0 else 1.0
 
-        text_x = geom["x"] + geom["width"] / 2
-        text_y = geom["y"] + geom["height"] / 2 + font_size / 3
+        font_style_css = 'italic' if font_style == 'italic' else 'normal'
 
-        parts.append(f'<text x="{text_x}" y="{text_y}" font-family="{font_family}" font-size="{font_size}" font-style="{font_style}" fill="{text_color}" text-anchor="middle">{text_content}</text>')
+        # Use foreignObject with HTML/CSS
+        parts = []
+        parts.append(f'<foreignObject x="{geom["x"]}" y="{geom["y"]}" width="{geom["width"]}" height="{geom["height"]}">')
+
+        # Button div with border-radius and flexbox centering
+        parts.append(f'<div xmlns="http://www.w3.org/1999/xhtml" style="')
+        parts.append('width: 100%; height: 100%;')
+        parts.append(f'background: {bg_color};')
+        parts.append(f'border-radius: {border_radius}px;')
+        parts.append('display: flex; align-items: center; justify-content: center;')
+        parts.append('">')
+
+        # Text with scale
+        parts.append(f'<span style="')
+        parts.append(f'color: {text_color};')
+        parts.append(f'font-family: \'{font_family}\';')
+        parts.append(f'font-style: {font_style_css};')
+        parts.append(f'font-size: {font_size}px;')
+        parts.append(f'transform: scale({scale_factor});')
+        parts.append('white-space: nowrap;')
+        parts.append('">' + text_content + '</span>')
+
+        parts.append('</div>')
+        parts.append('</foreignObject>')
 
         return '\n'.join(parts)
 
@@ -538,7 +512,7 @@ class TemplateEngine:
         return '\n'.join(parts)
 
     def _render_price_display(self, comp: Dict, canvas_width: int, canvas_height: int) -> str:
-        """Render price with large integer, small decimal/currency, and period below
+        """Render price with auto-fit using HTML/CSS flexbox
 
         Layout:
         [14]  [,99€]
@@ -557,14 +531,12 @@ class TemplateEngine:
         if not price_text:
             return ""
 
-        parts = []
-
         text_color = style.get("text_color", "#FFFFFF")
         font_family = style.get("font_family", "Oswald Bold")
+        font_style = style.get("font_style", "normal")
         alignment = style.get("alignment", "center")
 
         # Split price into integer and decimal parts
-        # Expected format: "14,99€" or "14.99€" or just "14€"
         import re
         match = re.match(r'^(\d+)([.,]\d+)?(.*)$', price_text.strip())
 
@@ -572,156 +544,105 @@ class TemplateEngine:
             integer_part = match.group(1)  # "14"
             decimal_part = (match.group(2) or "") + (match.group(3) or "")  # ",99€"
         else:
-            # Fallback: use entire price as integer
             integer_part = price_text
             decimal_part = ""
 
         # Font sizes
-        large_size = int(geom["height"] * 0.75)  # Integer takes ~75% of height
-        small_size = int(geom["height"] * 0.35)  # Decimal/period takes ~35% of height
-        period_size = int(geom["height"] * 0.25)  # Period even smaller ~25% of height
+        large_size = int(geom["height"] * 0.75)
+        small_size = int(geom["height"] * 0.35)
+        period_size = int(geom["height"] * 0.25)
 
-        # Calculate anchor point based on alignment
-        if alignment == "center":
-            anchor_x = geom["x"] + geom["width"] / 2
-        elif alignment == "right":
-            anchor_x = geom["x"] + geom["width"]
-        else:  # left
-            anchor_x = geom["x"]
+        # Calculate scale factor for auto-fit
+        char_width_ratio = 0.55 if "Oswald" in font_family else 0.6
+        estimated_width = len(integer_part) * large_size * char_width_ratio + len(decimal_part) * small_size * char_width_ratio
+        available_width = geom["width"] * 0.95
+        scale_factor = min(1.0, available_width / estimated_width) if estimated_width > 0 else 1.0
 
-        # Vertical centering calculation
-        content_height = large_size
-        if period_text:
-            content_height += period_size * 1.0
+        # Convert alignment to CSS
+        justify_content = {'left': 'flex-start', 'right': 'flex-end', 'center': 'center'}.get(alignment, 'center')
+        font_style_css = 'italic' if font_style == 'italic' else 'normal'
 
-        start_y = geom["y"] + (geom["height"] - content_height) / 2
+        # Use foreignObject with HTML/CSS
+        parts = []
+        parts.append(f'<foreignObject x="{geom["x"]}" y="{geom["y"]}" width="{geom["width"]}" height="{geom["height"]}">')
 
-        # Get font style from component style
-        font_style = style.get("font_style", "normal")
+        # Outer container for centering
+        parts.append('<div xmlns="http://www.w3.org/1999/xhtml" style="')
+        parts.append('width: 100%; height: 100%; display: flex;')
+        parts.append('align-items: center;')
+        parts.append(f'justify-content: {justify_content};')
+        parts.append('">')
 
-        # Spacing between integer and decimal parts
-        spacing = 5  # pixels
+        # Inner container with scale
+        # Gap proportional to font size (16% of large size)
+        gap = int(large_size * 0.16)
+        parts.append('<div style="')
+        parts.append(f'display: flex; gap: {gap}px;')
+        parts.append(f'transform: scale({scale_factor}); transform-origin: center;')
+        parts.append('">')
 
-        if alignment == "right":
-            # For right alignment, we align the rightmost element (decimal or period) to anchor
-            int_y = start_y + large_size
+        # Integer part (left side, large)
+        parts.append(f'<div style="color: {text_color}; font-family: \'{font_family}\'; font-style: {font_style_css}; font-size: {large_size}px; line-height: 1;">{integer_part}</div>')
 
-            # Calculate approximate widths for positioning
-            char_width_large = large_size * 0.6
-            char_width_small = small_size * 0.6
-            char_width_period = period_size * 0.6
-
-            if decimal_part and period_text:
-                # Has both decimal and period - period is rightmost
-                period_x = anchor_x
-                period_y = int_y
-                period_width = len(period_text) * char_width_period
-                parts.append(f'<text x="{period_x}" y="{period_y}" font-family="{font_family}" font-size="{period_size}" font-style="{font_style}" fill="{text_color}" text-anchor="end">{period_text}</text>')
-
-                # Decimal goes above period, also right-aligned
-                dec_x = anchor_x
-                dec_y = start_y + small_size * 1.2
-                parts.append(f'<text x="{dec_x}" y="{dec_y}" font-family="{font_family}" font-size="{small_size}" font-style="{font_style}" fill="{text_color}" text-anchor="end">{decimal_part}</text>')
-
-                # Integer left of decimal, right-aligned
-                decimal_width = len(decimal_part) * char_width_small
-                int_x = dec_x - decimal_width - spacing
-                parts.append(f'<text x="{int_x}" y="{int_y}" font-family="{font_family}" font-size="{large_size}" font-style="{font_style}" fill="{text_color}" text-anchor="end">{integer_part}</text>')
-
-            elif decimal_part:
-                # Only decimal, no period
-                dec_x = anchor_x
-                dec_y = start_y + small_size * 1.2
-                parts.append(f'<text x="{dec_x}" y="{dec_y}" font-family="{font_family}" font-size="{small_size}" font-style="{font_style}" fill="{text_color}" text-anchor="end">{decimal_part}</text>')
-
-                decimal_width = len(decimal_part) * char_width_small
-                int_x = dec_x - decimal_width - spacing
-                parts.append(f'<text x="{int_x}" y="{int_y}" font-family="{font_family}" font-size="{large_size}" font-style="{font_style}" fill="{text_color}" text-anchor="end">{integer_part}</text>')
-
-            else:
-                # Only integer, maybe period
-                if period_text:
-                    period_x = anchor_x
-                    period_y = int_y
-                    parts.append(f'<text x="{period_x}" y="{period_y}" font-family="{font_family}" font-size="{period_size}" font-style="{font_style}" fill="{text_color}" text-anchor="end">{period_text}</text>')
-
-                    period_width = len(period_text) * char_width_period
-                    int_x = period_x - period_width - spacing
-                else:
-                    int_x = anchor_x
-
-                parts.append(f'<text x="{int_x}" y="{int_y}" font-family="{font_family}" font-size="{large_size}" font-style="{font_style}" fill="{text_color}" text-anchor="end">{integer_part}</text>')
-        elif alignment == "left":
-            # For left alignment, integer starts at anchor, decimal/period follow
-            int_y = start_y + large_size
-
-            # Calculate approximate widths for positioning
-            char_width_large = large_size * 0.6
-            char_width_small = small_size * 0.6
-
-            # Integer part: left-aligned to anchor
-            int_x = anchor_x
-            integer_width = len(integer_part) * char_width_large
-            parts.append(f'<text x="{int_x}" y="{int_y}" font-family="{font_family}" font-size="{large_size}" font-style="{font_style}" fill="{text_color}" text-anchor="start">{integer_part}</text>')
-
+        # Decimal + period column (right side)
+        if decimal_part or period_text:
+            # Calculate offset to align decimal top with integer top (approximately 10% of large size)
+            offset = int(large_size * 0.10)
+            parts.append(f'<div style="display: flex; flex-direction: column; align-items: flex-start; margin-top: {offset}px;">')
             if decimal_part:
-                # Decimal part: positioned after integer with spacing
-                dec_x = int_x + integer_width + spacing
-                dec_y = start_y + small_size * 1.2
-                parts.append(f'<text x="{dec_x}" y="{dec_y}" font-family="{font_family}" font-size="{small_size}" font-style="{font_style}" fill="{text_color}" text-anchor="start">{decimal_part}</text>')
-
+                parts.append(f'<div style="color: {text_color}; font-family: \'{font_family}\'; font-style: {font_style_css}; font-size: {small_size}px; line-height: 1;">{decimal_part}</div>')
             if period_text:
-                # Period: positioned after integer with spacing, same baseline
-                period_x = int_x + integer_width + spacing
-                period_y = int_y
-                parts.append(f'<text x="{period_x}" y="{period_y}" font-family="{font_family}" font-size="{period_size}" font-style="{font_style}" fill="{text_color}" text-anchor="start">{period_text}</text>')
+                parts.append(f'<div style="color: {text_color}; font-family: \'{font_family}\'; font-style: {font_style_css}; font-size: {period_size}px; line-height: 1; margin-top: 2px;">{period_text}</div>')
+            parts.append('</div>')
 
-        else:
-            # Center alignment (original logic)
-            int_x = anchor_x - spacing
-            int_y = start_y + large_size
-            parts.append(f'<text x="{int_x}" y="{int_y}" font-family="{font_family}" font-size="{large_size}" font-style="{font_style}" fill="{text_color}" text-anchor="end">{integer_part}</text>')
-
-            # Render decimal part (small, left-aligned from anchor with spacing, top-aligned)
-            if decimal_part:
-                dec_x = anchor_x + spacing
-                dec_y = start_y + small_size * 1.2  # Top-aligned
-                parts.append(f'<text x="{dec_x}" y="{dec_y}" font-family="{font_family}" font-size="{small_size}" font-style="{font_style}" fill="{text_color}" text-anchor="start">{decimal_part}</text>')
-
-            # Render period (smaller, aligned to baseline of integer, left-aligned from anchor with spacing)
-            if period_text:
-                period_x = anchor_x + spacing
-                period_y = int_y  # Same baseline as integer
-                parts.append(f'<text x="{period_x}" y="{period_y}" font-family="{font_family}" font-size="{period_size}" font-style="{font_style}" fill="{text_color}" text-anchor="start">{period_text}</text>')
+        parts.append('</div>')  # Close inner container
+        parts.append('</div>')  # Close outer container
+        parts.append('</foreignObject>')
 
         return '\n'.join(parts)
 
     def _render_bullet_list(self, comp: Dict, canvas_width: int, canvas_height: int) -> str:
-        """Render bullet point list"""
+        """Render bullet point list with HTML/CSS for word-wrap"""
         geom = self._get_geometry(comp, canvas_width, canvas_height)
         style = comp.get("style", {})
 
         items = comp.get("items", [])
 
-        parts = []
+        if not items:
+            return ""
 
         text_color = style.get("text_color", "#FFFFFF")
         font_size = style.get("font_size", 16)
-        font_family = style.get("font_family", "Roboto Regular")
-        line_spacing = style.get("line_spacing", font_size * 1.5)
+        font_family = style.get("font_family", "Roboto")
 
-        for i, item_source in enumerate(items):
+        # Use foreignObject with HTML/CSS
+        parts = []
+        parts.append(f'<foreignObject x="{geom["x"]}" y="{geom["y"]}" width="{geom["width"]}" height="{geom["height"]}">')
+
+        # Container div
+        parts.append('<div xmlns="http://www.w3.org/1999/xhtml" style="')
+        parts.append('width: 100%; height: 100%;')
+        parts.append('display: flex; flex-direction: column;')
+        parts.append('justify-content: center;')
+        parts.append(f'color: {text_color};')
+        parts.append(f'font-family: \'{font_family}\';')
+        parts.append(f'font-size: {font_size}px;')
+        parts.append('gap: 8px;')
+        parts.append('">')
+
+        # Render each item
+        for item_source in items:
             item_text = self._get_content(item_source)
             if not item_text:
                 continue
 
-            y_pos = geom["y"] + i * line_spacing + font_size
+            parts.append('<div style="display: flex; gap: 8px; align-items: flex-start;">')
+            parts.append('<span style="flex-shrink: 0;">✓</span>')
+            parts.append(f'<span style="word-wrap: break-word; overflow-wrap: break-word;">{item_text}</span>')
+            parts.append('</div>')
 
-            # Checkmark bullet
-            parts.append(f'<text x="{geom["x"]}" y="{y_pos}" font-family="{font_family}" font-size="{font_size}" fill="{text_color}">✓</text>')
-
-            # Item text
-            parts.append(f'<text x="{geom["x"] + font_size + 5}" y="{y_pos}" font-family="{font_family}" font-size="{font_size}" fill="{text_color}">{item_text}</text>')
+        parts.append('</div>')
+        parts.append('</foreignObject>')
 
         return '\n'.join(parts)
 
