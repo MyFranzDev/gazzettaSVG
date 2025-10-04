@@ -63,14 +63,16 @@
 
                 </div>
 
-                <!-- Custom text input (always visible) -->
+                <!-- Custom text input (disabled in demo) -->
                 <div class="custom-text-input" style="margin-top: 15px;">
                     <input type="text"
                            name="data[custom_<?= $field ?>]"
                            id="input_<?= $field ?>"
                            value="<?= htmlspecialchars($wizardData['custom_' . $field] ?? '') ?>"
-                           placeholder="Testo personalizzato"
-                           style="width: 100%; padding: 12px 16px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 15px; font-family: 'Alata', sans-serif;">
+                           placeholder="Testo personalizzato (disabilitato in demo)"
+                           readonly
+                           class="demo-disabled"
+                           style="width: 100%; padding: 12px 16px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 15px; font-family: 'Alata', sans-serif; background: #f5f5f5; cursor: not-allowed;">
                     <input type="hidden" name="selected_<?= $field ?>" id="selected_<?= $field ?>" value="<?= $wizardData['selected_' . $field] ?? '1' ?>">
                 </div>
 
@@ -134,18 +136,16 @@ fields.forEach(field => {
         }
     });
 
-    // Custom text input
+    // Custom text input (disabled in demo - show snackbar on click)
     if (customTextInput) {
-        customTextInput.addEventListener('input', function() {
-            updateFinalValue();
+        customTextInput.addEventListener('click', function() {
+            showSnackbar('🚧 Funzionalità disponibile nella versione completa');
+        });
 
-            // Visual feedback: deselect radio if custom text is entered
-            if (this.value.trim()) {
-                document.querySelectorAll(`input[name="selected_${field}"]`).forEach(r => {
-                    r.closest('.text-variant').classList.remove('selected');
-                    r.checked = false;
-                });
-            }
+        customTextInput.addEventListener('input', function() {
+            // Prevent input in demo mode
+            this.value = '';
+            showSnackbar('🚧 Funzionalità disponibile nella versione completa');
         });
     }
 

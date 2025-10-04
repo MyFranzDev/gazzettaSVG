@@ -15,6 +15,31 @@ if (!isset($_SESSION['wizard'])) {
     ];
 }
 
+// Function to generate banners using Python script
+function generateBanners($wizardData) {
+    // For demo, simulate generation
+    // TODO: Call actual Python script with exec()
+
+    $result = [
+        'success' => true,
+        'banners' => []
+    ];
+
+    foreach ($wizardData['templates'] ?? [] as $templateId) {
+        $result['banners'][] = [
+            'template_id' => $templateId,
+            'svg_path' => "output/{$templateId}.svg",
+            'generated' => false // Will be true when Python script runs
+        ];
+    }
+
+    return $result;
+}
+
+// Get current step and wizard data
+$currentStep = $_SESSION['wizard']['step'];
+$wizardData = $_SESSION['wizard']['data'];
+
 // Handle step navigation
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
@@ -25,7 +50,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['wizard']['data'],
             $_POST['data'] ?? []
         );
+
+        // If moving from step 4 to 5, generate banners
+        if ($currentStep == 4) {
+            // Generate banners by calling Python script
+            $wizardData = $_SESSION['wizard']['data']; // Update with new data
+            $result = generateBanners($wizardData);
+            $_SESSION['wizard']['generated_banners'] = $result;
+        }
+
         $_SESSION['wizard']['step']++;
+        $currentStep++; // Update local variable
     } elseif ($action === 'back') {
         if ($_SESSION['wizard']['step'] > 1) {
             $_SESSION['wizard']['step']--;
@@ -44,6 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// Update current step and wizard data after navigation
 $currentStep = $_SESSION['wizard']['step'];
 $wizardData = $_SESSION['wizard']['data'];
 
@@ -77,6 +113,10 @@ $mockBackgrounds = [
     'Tennis' => [
         ['id' => 'bg11', 'name' => 'Wimbledon', 'thumb' => 'backgrounds/bg11.png'],
         ['id' => 'bg12', 'name' => 'US Open', 'thumb' => 'backgrounds/bg12.png'],
+        ['id' => 'bg42', 'name' => 'Tennis 1', 'thumb' => 'backgrounds/bg42.png'],
+        ['id' => 'bg43', 'name' => 'Tennis 2', 'thumb' => 'backgrounds/bg43.png'],
+        ['id' => 'bg44', 'name' => 'Tennis 3', 'thumb' => 'backgrounds/bg44.png'],
+        ['id' => 'bg45', 'name' => 'Australian Open', 'thumb' => 'backgrounds/bg45.png'],
     ],
     'Pallavolo/Volley' => [
         ['id' => 'bg06', 'name' => 'Volley 1', 'thumb' => 'backgrounds/bg06.png'],
@@ -84,6 +124,8 @@ $mockBackgrounds = [
         ['id' => 'bg08', 'name' => 'Volley 3', 'thumb' => 'backgrounds/bg08.png'],
         ['id' => 'bg09', 'name' => 'Volley 4', 'thumb' => 'backgrounds/bg09.png'],
         ['id' => 'bg10', 'name' => 'Volley 5', 'thumb' => 'backgrounds/bg10.png'],
+        ['id' => 'bg46', 'name' => 'Volley 6', 'thumb' => 'backgrounds/bg46.png'],
+        ['id' => 'bg47', 'name' => 'Volley 7', 'thumb' => 'backgrounds/bg47.png'],
     ],
     'Ciclismo' => [
         ['id' => 'bg20', 'name' => 'Ciclismo 1', 'thumb' => 'backgrounds/bg20.png'],

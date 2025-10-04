@@ -102,10 +102,10 @@
 
         <!-- Image Upload (Optional) -->
         <div class="form-group" style="margin-top: 30px;">
-            <label>Immagine Aggiuntiva (opzionale)</label>
+            <label>📱 Immagine nello smartphone / immagine libera (opzionale)</label>
             <div class="upload-area" id="uploadArea">
                 <input type="file" id="imageUpload" name="image" accept="image/*" style="display: none;">
-                <div class="upload-icon">📤</div>
+                <div class="upload-icon">📱</div>
                 <div class="upload-text">Clicca per caricare o trascina un'immagine qui</div>
                 <div class="upload-hint">JPG, PNG - Max 5MB</div>
             </div>
