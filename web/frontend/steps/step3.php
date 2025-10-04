@@ -73,11 +73,11 @@
                            readonly
                            class="demo-disabled"
                            style="width: 100%; padding: 12px 16px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 15px; font-family: 'Alata', sans-serif; background: #f5f5f5; cursor: not-allowed;">
-                    <input type="hidden" name="selected_<?= $field ?>" id="selected_<?= $field ?>" value="<?= $wizardData['selected_' . $field] ?? '1' ?>">
                 </div>
 
-                <!-- Hidden field for final text value -->
-                <input type="hidden" name="data[<?= $field ?>]" id="final_<?= $field ?>" value="">
+                <!-- Hidden fields for tracking selection and final text value -->
+                <input type="hidden" name="data[selected_<?= $field ?>]" id="selected_<?= $field ?>" value="<?= $wizardData['selected_' . $field] ?? '1' ?>">
+                <input type="hidden" name="data[<?= $field ?>]" id="final_<?= $field ?>" value="<?= htmlspecialchars($wizardData[$field] ?? '') ?>">
             </div>
         <?php endforeach; ?>
 
@@ -129,12 +129,10 @@ fields.forEach(field => {
             // Update final value
             updateFinalValue();
         });
-
-        // Initialize on load
-        if (radio.checked) {
-            updateFinalValue();
-        }
     });
+
+    // Initialize on page load
+    updateFinalValue();
 
     // Custom text input (disabled in demo - show snackbar on click)
     if (customTextInput) {
