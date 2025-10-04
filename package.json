@@ -1,0 +1,15 @@
+{
+  "name": "colab-locale",
+  "version": "1.0.0",
+  "description": "Generatore automatico di banner SVG promozionali per Gazzetta dello Sport con integrazione AI e **architettura template-driven** per generazione multi-formato.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "puppeteer": "^24.23.0"
+  }
+}

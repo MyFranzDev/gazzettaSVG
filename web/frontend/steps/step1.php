@@ -78,11 +78,31 @@
                 foreach ($mockSports as $sport):
                     $selected = ($wizardData['sport'] ?? '') === $sport;
                 ?>
-                    <label class="sport-card <?= $selected ? 'selected' : '' ?>">
+                    <label class="sport-card <?= $selected ? 'selected' : '' ?>" data-sport="<?= htmlspecialchars($sport) ?>">
                         <input type="radio" name="data[sport]" value="<?= htmlspecialchars($sport) ?>"
                                <?= $selected ? 'checked' : '' ?> required>
                         <div class="sport-icon"><?= $sportIcons[$sport] ?? '🏅' ?></div>
                         <div class="sport-name"><?= htmlspecialchars($sport) ?></div>
+                    </label>
+                <?php endforeach; ?>
+            </div>
+        </div>
+
+        <!-- Background Selection (shown after sport selection) -->
+        <div class="form-group" id="backgroundSection" style="margin-top: 30px; display: <?= isset($wizardData['sport']) ? 'block' : 'none' ?>;">
+            <label>Sfondo per <span id="selectedSportName"><?= htmlspecialchars($wizardData['sport'] ?? 'Generico') ?></span> *</label>
+            <div class="background-grid" id="backgroundGrid">
+                <?php
+                $selectedSport = $wizardData['sport'] ?? 'Generico';
+                $sportBackgrounds = $mockBackgrounds[$selectedSport] ?? $mockBackgrounds['Generico'];
+                foreach ($sportBackgrounds as $bg):
+                    $selected = ($wizardData['background'] ?? '') === $bg['id'];
+                ?>
+                    <label class="background-card <?= $selected ? 'selected' : '' ?>">
+                        <input type="radio" name="data[background]" value="<?= htmlspecialchars($bg['id']) ?>"
+                               <?= $selected ? 'checked' : '' ?>>
+                        <img src="<?= htmlspecialchars($bg['thumb']) ?>" alt="<?= htmlspecialchars($bg['name']) ?>">
+                        <div class="bg-name"><?= htmlspecialchars($bg['name']) ?></div>
                     </label>
                 <?php endforeach; ?>
             </div>
@@ -99,19 +119,58 @@
 
 <script>
 const nextBtn = document.getElementById('nextBtn');
+const backgroundSection = document.getElementById('backgroundSection');
+const selectedSportName = document.getElementById('selectedSportName');
+const backgroundGrid = document.getElementById('backgroundGrid');
 
-// Check if sport is already selected
+// Background data by sport
+const backgroundsBySport = <?= json_encode($mockBackgrounds) ?>;
+
+// Check if sport and background are selected
 function updateButtonState() {
     const sportSelected = document.querySelector('input[name="data[sport]"]:checked');
-    nextBtn.disabled = !sportSelected;
+    const backgroundSelected = document.querySelector('input[name="data[background]"]:checked');
 
-    if (sportSelected) {
+    const isValid = sportSelected && backgroundSelected;
+    nextBtn.disabled = !isValid;
+
+    if (isValid) {
         nextBtn.style.opacity = '1';
         nextBtn.style.cursor = 'pointer';
     } else {
         nextBtn.style.opacity = '0.5';
         nextBtn.style.cursor = 'not-allowed';
     }
+}
+
+// Update backgrounds when sport changes
+function updateBackgrounds(sport) {
+    selectedSportName.textContent = sport;
+    const backgrounds = backgroundsBySport[sport] || backgroundsBySport['Generico'];
+
+    backgroundGrid.innerHTML = '';
+    backgrounds.forEach(bg => {
+        const label = document.createElement('label');
+        label.className = 'background-card';
+        label.innerHTML = `
+            <input type="radio" name="data[background]" value="${bg.id}">
+            <img src="${bg.thumb}" alt="${bg.name}">
+            <div class="bg-name">${bg.name}</div>
+        `;
+
+        label.addEventListener('click', function() {
+            document.querySelectorAll('.background-card').forEach(c => c.classList.remove('selected'));
+            this.classList.add('selected');
+            this.querySelector('input[type="radio"]').checked = true;
+            updateButtonState();
+        });
+
+        backgroundGrid.appendChild(label);
+    });
+
+    // Show background section
+    backgroundSection.style.display = 'block';
+    updateButtonState();
 }
 
 // Add click handler to style cards
@@ -127,6 +186,18 @@ document.querySelectorAll('.style-card').forEach(card => {
 document.querySelectorAll('.sport-card').forEach(card => {
     card.addEventListener('click', function() {
         document.querySelectorAll('.sport-card').forEach(c => c.classList.remove('selected'));
+        this.classList.add('selected');
+        this.querySelector('input[type="radio"]').checked = true;
+
+        const sport = this.dataset.sport;
+        updateBackgrounds(sport);
+    });
+});
+
+// Add click handler to initial background cards (if sport already selected)
+document.querySelectorAll('.background-card').forEach(card => {
+    card.addEventListener('click', function() {
+        document.querySelectorAll('.background-card').forEach(c => c.classList.remove('selected'));
         this.classList.add('selected');
         this.querySelector('input[type="radio"]').checked = true;
         updateButtonState();

@@ -17,20 +17,79 @@ if (!isset($_SESSION['wizard'])) {
 
 // Function to generate banners using Python script
 function generateBanners($wizardData) {
-    // For demo, simulate generation
-    // TODO: Call actual Python script with exec()
+    // Prepare paths
+    $baseDir = __DIR__ . '/../..';
+    $pythonScript = $baseDir . '/generate_single_banner.py';
+    $outputDir = $baseDir . '/web/frontend/generated';
+
+    // Create output directory if not exists
+    if (!file_exists($outputDir)) {
+        mkdir($outputDir, 0755, true);
+    }
 
     $result = [
         'success' => true,
-        'banners' => []
+        'banners' => [],
+        'errors' => []
     ];
 
+    // Generate each selected template
     foreach ($wizardData['templates'] ?? [] as $templateId) {
-        $result['banners'][] = [
-            'template_id' => $templateId,
-            'svg_path' => "output/{$templateId}.svg",
-            'generated' => false // Will be true when Python script runs
-        ];
+        try {
+            // Prepare template data as JSON
+            $templateData = [
+                'template' => $templateId,
+                'header_text' => $wizardData['header'] ?? 'PROMO',
+                'main_title' => $wizardData['main_title'] ?? 'TITOLO',
+                'description_text' => $wizardData['subtitle'] ?? '',
+                'cta_text' => $wizardData['cta'] ?? 'ISCRIVITI',
+                'price' => $wizardData['prezzo'] ?? '0,99€',
+                'price_period' => $wizardData['periodicita'] ?? '',
+                'background' => $wizardData['background'] ?? 'bg01'
+            ];
+
+            // Save template data to temp JSON file
+            $jsonFile = $outputDir . "/data_{$templateId}.json";
+            file_put_contents($jsonFile, json_encode($templateData, JSON_PRETTY_PRINT));
+
+            // Call Python script to generate banner
+            $outputPath = $outputDir . "/{$templateId}.svg";
+            $pngPath = $outputDir . "/{$templateId}.png";
+
+            // Execute Python script to generate SVG
+            $jsonData = json_encode($templateData);
+            $escapedJson = escapeshellarg($jsonData);
+            $command = "cd " . escapeshellarg($baseDir) . " && python3 " . escapeshellarg($pythonScript) . " {$escapedJson} 2>&1 > " . escapeshellarg($outputPath);
+
+            exec($command, $output, $returnCode);
+
+            // Convert SVG to PNG using Node.js for better quality
+            if ($returnCode === 0 && file_exists($outputPath)) {
+                $nodeScript = $baseDir . '/svg_to_png.js';
+                $pngCommand = "node " . escapeshellarg($nodeScript) . " " . escapeshellarg($outputPath) . " " . escapeshellarg($pngPath) . " 2>&1";
+                exec($pngCommand, $pngOutput, $pngReturnCode);
+            }
+
+            if ($returnCode === 0 && file_exists($outputPath)) {
+                $result['banners'][] = [
+                    'template_id' => $templateId,
+                    'svg_path' => "generated/{$templateId}.svg",
+                    'generated' => true,
+                    'file_size' => filesize($outputPath)
+                ];
+            } else {
+                $result['errors'][] = "Failed to generate {$templateId}: " . implode("\n", $output);
+                $result['banners'][] = [
+                    'template_id' => $templateId,
+                    'svg_path' => null,
+                    'generated' => false,
+                    'error' => implode("\n", $output)
+                ];
+            }
+
+        } catch (Exception $e) {
+            $result['errors'][] = "Error generating {$templateId}: " . $e->getMessage();
+        }
     }
 
     return $result;
@@ -111,11 +170,13 @@ $mockBackgrounds = [
         ['id' => 'bg41', 'name' => 'Calcio 16', 'thumb' => 'backgrounds/bg41.png'],
     ],
     'Tennis' => [
+        ['id' => 'bg09', 'name' => 'Tennis 1', 'thumb' => 'backgrounds/bg09.png'],
+        ['id' => 'bg10', 'name' => 'Tennis 2', 'thumb' => 'backgrounds/bg10.png'],
         ['id' => 'bg11', 'name' => 'Wimbledon', 'thumb' => 'backgrounds/bg11.png'],
         ['id' => 'bg12', 'name' => 'US Open', 'thumb' => 'backgrounds/bg12.png'],
-        ['id' => 'bg42', 'name' => 'Tennis 1', 'thumb' => 'backgrounds/bg42.png'],
-        ['id' => 'bg43', 'name' => 'Tennis 2', 'thumb' => 'backgrounds/bg43.png'],
-        ['id' => 'bg44', 'name' => 'Tennis 3', 'thumb' => 'backgrounds/bg44.png'],
+        ['id' => 'bg42', 'name' => 'Tennis 3', 'thumb' => 'backgrounds/bg42.png'],
+        ['id' => 'bg43', 'name' => 'Tennis 4', 'thumb' => 'backgrounds/bg43.png'],
+        ['id' => 'bg44', 'name' => 'Tennis 5', 'thumb' => 'backgrounds/bg44.png'],
         ['id' => 'bg45', 'name' => 'Australian Open', 'thumb' => 'backgrounds/bg45.png'],
     ],
     'Pallavolo/Volley' => [
@@ -128,25 +189,42 @@ $mockBackgrounds = [
         ['id' => 'bg47', 'name' => 'Volley 7', 'thumb' => 'backgrounds/bg47.png'],
     ],
     'Ciclismo' => [
-        ['id' => 'bg20', 'name' => 'Ciclismo 1', 'thumb' => 'backgrounds/bg20.png'],
-        ['id' => 'bg21', 'name' => 'Ciclismo 2', 'thumb' => 'backgrounds/bg21.png'],
-        ['id' => 'bg22', 'name' => 'Ciclismo 3', 'thumb' => 'backgrounds/bg22.png'],
+        ['id' => 'bg14', 'name' => 'Ciclismo', 'thumb' => 'backgrounds/bg14.png'],
     ],
     'Golf' => [
-        ['id' => 'bg13', 'name' => 'Golf 1', 'thumb' => 'backgrounds/bg13.png'],
-        ['id' => 'bg14', 'name' => 'Golf 2', 'thumb' => 'backgrounds/bg14.png'],
+        ['id' => 'bg19', 'name' => 'Golf 1', 'thumb' => 'backgrounds/bg19.png'],
+        ['id' => 'bg20', 'name' => 'Golf 2', 'thumb' => 'backgrounds/bg20.png'],
     ],
     'Formula 1/Moto GP' => [
-        ['id' => 'bg23', 'name' => 'F1/MotoGP 1', 'thumb' => 'backgrounds/bg23.png'],
-        ['id' => 'bg24', 'name' => 'F1/MotoGP 2', 'thumb' => 'backgrounds/bg24.png'],
-        ['id' => 'bg25', 'name' => 'F1/MotoGP 3', 'thumb' => 'backgrounds/bg25.png'],
-        ['id' => 'bg26', 'name' => 'F1/MotoGP 4', 'thumb' => 'backgrounds/bg26.png'],
-        ['id' => 'bg27', 'name' => 'F1/MotoGP 5', 'thumb' => 'backgrounds/bg27.png'],
+        ['id' => 'bg25', 'name' => 'F1/MotoGP 1', 'thumb' => 'backgrounds/bg25.png'],
+        ['id' => 'bg26', 'name' => 'F1/MotoGP 2', 'thumb' => 'backgrounds/bg26.png'],
+        ['id' => 'bg27', 'name' => 'F1/MotoGP 3', 'thumb' => 'backgrounds/bg27.png'],
+        ['id' => 'bg28', 'name' => 'F1/MotoGP 4', 'thumb' => 'backgrounds/bg28.png'],
+        ['id' => 'bg29', 'name' => 'F1/MotoGP 5', 'thumb' => 'backgrounds/bg29.png'],
     ],
     'Generico' => [
         ['id' => 'bg01', 'name' => 'Sfondo 1', 'thumb' => 'backgrounds/bg01.png'],
         ['id' => 'bg02', 'name' => 'Sfondo 2', 'thumb' => 'backgrounds/bg02.png'],
         ['id' => 'bg03', 'name' => 'Sfondo 3', 'thumb' => 'backgrounds/bg03.png'],
+        ['id' => 'bg06', 'name' => 'Sfondo 4', 'thumb' => 'backgrounds/bg06.png'],
+        ['id' => 'bg08', 'name' => 'Sfondo 5', 'thumb' => 'backgrounds/bg08.png'],
+        ['id' => 'bg09', 'name' => 'Sfondo 6', 'thumb' => 'backgrounds/bg09.png'],
+        ['id' => 'bg10', 'name' => 'Sfondo 7', 'thumb' => 'backgrounds/bg10.png'],
+        ['id' => 'bg11', 'name' => 'Sfondo 8', 'thumb' => 'backgrounds/bg11.png'],
+        ['id' => 'bg12', 'name' => 'Sfondo 9', 'thumb' => 'backgrounds/bg12.png'],
+        ['id' => 'bg13', 'name' => 'Sfondo 10', 'thumb' => 'backgrounds/bg13.png'],
+        ['id' => 'bg19', 'name' => 'Sfondo 11', 'thumb' => 'backgrounds/bg19.png'],
+        ['id' => 'bg20', 'name' => 'Sfondo 12', 'thumb' => 'backgrounds/bg20.png'],
+        ['id' => 'bg25', 'name' => 'Sfondo 13', 'thumb' => 'backgrounds/bg25.png'],
+        ['id' => 'bg27', 'name' => 'Sfondo 14', 'thumb' => 'backgrounds/bg27.png'],
+        ['id' => 'bg34', 'name' => 'Sfondo 15', 'thumb' => 'backgrounds/bg34.png'],
+        ['id' => 'bg35', 'name' => 'Sfondo 16', 'thumb' => 'backgrounds/bg35.png'],
+        ['id' => 'bg36', 'name' => 'Sfondo 17', 'thumb' => 'backgrounds/bg36.png'],
+        ['id' => 'bg37', 'name' => 'Sfondo 18', 'thumb' => 'backgrounds/bg37.png'],
+        ['id' => 'bg38', 'name' => 'Sfondo 19', 'thumb' => 'backgrounds/bg38.png'],
+        ['id' => 'bg39', 'name' => 'Sfondo 20', 'thumb' => 'backgrounds/bg39.png'],
+        ['id' => 'bg40', 'name' => 'Sfondo 21', 'thumb' => 'backgrounds/bg40.png'],
+        ['id' => 'bg41', 'name' => 'Sfondo 22', 'thumb' => 'backgrounds/bg41.png'],
     ]
 ];
 
@@ -228,13 +306,13 @@ $mockTemplates = [
             <?php if ($currentStep == 1): ?>
                 <?php include 'steps/step1.php'; ?>
             <?php elseif ($currentStep == 2): ?>
-                <?php include 'steps/step4.php'; ?>
+                <?php include 'steps/step2.php'; ?>
             <?php elseif ($currentStep == 3): ?>
                 <?php include 'steps/step3.php'; ?>
             <?php elseif ($currentStep == 4): ?>
-                <?php include 'steps/step5.php'; ?>
+                <?php include 'steps/step4.php'; ?>
             <?php elseif ($currentStep == 5): ?>
-                <?php include 'steps/step6.php'; ?>
+                <?php include 'steps/step5.php'; ?>
             <?php endif; ?>
         </div>
     </div>

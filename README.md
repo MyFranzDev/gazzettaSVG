@@ -58,19 +58,18 @@ Apri il browser su `http://localhost:8000` e accedi con password: `touchlabs2`
 
 #### Wizard 5-Step
 
-**Step 1: Evento**
+**Step 1: Evento e Sport**
 - Inserisci nome evento
 - **Prezzo separato**: Campo dedicato per prezzo (es. `0,99€`) e periodicità (es. `/mese`)
 - Seleziona stile grafico (2 varianti con preview visiva)
 - Scegli lo sport dalla griglia con emoji
+- **Selezione sfondo dinamica**: Gli sfondi cambiano automaticamente in base allo sport selezionato
 
 **Step 2: Risorse**
 - **Logo personalizzati**: Carica loghi full e small per sfondi chiari/scuri (4 varianti)
 - Logo Gazzetta precaricato (bianco/nero) come fallback
 - Visualizza font disponibili (Oswald Bold/BoldItalic, Roboto Bold/BoldItalic/Regular)
 - Carica immagine opzionale
-- Seleziona sfondo filtrato per sport (41 sfondi disponibili, 10 nuovi per Calcio)
-- [DEMO] Genera sfondo con AI (disabilitato in demo)
 
 **Step 3: Testi**
 - Visualizza 3 varianti AI-generated per ogni campo (header, titolo, sottotitolo, CTA)
@@ -81,14 +80,15 @@ Apri il browser su `http://localhost:8000` e accedi con password: `touchlabs2`
 - Seleziona formati banner da generare
 - Checkbox multipli con "Seleziona tutti"
 - Anteprima count banner selezionati
+- **Loader animato** durante la generazione e conversione PNG
 
 **Step 5: Download & Editing**
 - Riepilogo configurazione
-- **Preview banner** con editing inline
+- **Preview PNG ad alta qualità** (generata con Puppeteer)
 - **Modifica testi direttamente**: Header, Titolo, CTA, Prezzo, Periodicità
 - **Rigenera singolo banner** con nuovi testi via AJAX
 - **Notifiche animate** per feedback utente
-- Download individuale o ZIP completo
+- Download PNG (non modificabile dall'utente, SVG mantenuto server-side)
 
 #### Caratteristiche Web Interface
 
@@ -96,11 +96,13 @@ Apri il browser su `http://localhost:8000` e accedi con password: `touchlabs2`
 - ✅ Validazione step-by-step (bottoni disabilitati fino a completamento)
 - ✅ Design responsive con tema Gazzetta (navy blue + gold)
 - ✅ Snackbar notifications per funzioni demo
-- ✅ LocalStorage per history AI backgrounds
 - ✅ Mock data per sviluppo frontend standalone
 - ✅ **Post-generation editing**: Modifica inline con rigenerazione AJAX
 - ✅ **API REST**: Endpoint `/api/regenerate_banner.php` per rigenerazione singoli banner
 - ✅ **Notifiche animate**: Feedback visivo per operazioni utente
+- ✅ **PNG ad alta qualità**: Conversione SVG→PNG con Puppeteer (headless Chrome) a 2x scale
+- ✅ **Loader animato**: Overlay con spinner durante generazione e conversione
+- ✅ **Sfondi sport-specific**: Selezione dinamica sfondi contestuale allo sport nello Step 1
 
 ---
 
@@ -240,22 +242,26 @@ Opzioni:
 .
 ├── gazzetta_multi_generator.py  # Script principale multi-banner (CLI)
 ├── template_engine.py           # Motore rendering generico
-├── gazzetta_svg_generator.py    # Script legacy (singolo banner)
+├── generate_single_banner.py    # Script per generazione singolo banner da JSON
+├── svg_to_png.js                # Conversione SVG→PNG con Puppeteer
 ├── web/                         # Applicazione web
 │   └── frontend/                # Frontend PHP
 │       ├── index.php            # Login page
-│       ├── wizard.php           # Wizard principale
+│       ├── wizard.php           # Wizard principale (5 step)
 │       ├── logout.php           # Logout handler
 │       ├── styles.css           # Stili Gazzetta theme
 │       ├── script.js            # Utility JavaScript
 │       ├── steps/               # Step wizard
-│       │   ├── step1.php        # Evento e sport
+│       │   ├── step1.php        # Evento, sport e sfondi
+│       │   ├── step2.php        # Risorse (loghi, font, immagini)
 │       │   ├── step3.php        # Testi AI
-│       │   ├── step4.php        # Risorse e sfondo
-│       │   ├── step5.php        # Selezione formati
-│       │   └── step6.php        # Download
-│       ├── backgrounds/         # 31 sfondi PNG
-│       ├── logos/               # Loghi Gazzetta (bianco/nero)
+│       │   ├── step4.php        # Selezione formati e generazione
+│       │   └── step5.php        # Preview, editing e download
+│       ├── api/                 # API endpoints
+│       │   └── regenerate_banner.php  # Rigenerazione singolo banner
+│       ├── backgrounds/         # 47+ sfondi PNG
+│       ├── logos/               # Loghi Gazzetta (bianco/nero, full/small)
+│       ├── generated/           # Banner generati (SVG + PNG)
 │       └── fonts/               # Font woff2
 ├── templates/                   # Template JSON
 │   ├── 184x90.json              # Small banner
@@ -275,14 +281,11 @@ Opzioni:
 │   ├── Oswald-Bold.woff2
 │   ├── Roboto-Regular.woff2
 │   └── Roboto-Bold.woff2
-├── background/                  # Sfondi disponibili per CLI
-│   ├── bg01.png
-│   ├── bg15.png (Champions League)
-│   ├── bg19.png (US Open)
-│   └── ... (31 totali)
+├── background/                  # Sfondi disponibili
+│   ├── bg01.png - bg47.png      # 47+ sfondi organizzati per sport
 ├── images/                      # Immagini da usare nei banner
 │   └── calcio.jpg
-└── output/                      # Banner generati
+└── output/                      # Banner generati (CLI)
     ├── 184x90.svg
     ├── 300x250.svg
     └── ...
@@ -325,58 +328,29 @@ Il template engine supporta 11 tipi di componenti:
 
 ## 🎯 Sfondi Supportati per Sport
 
-### Generico
-- Sfondo 1 - bg01.png
-- Sfondo 2 - bg02.png
-- Sfondo 3 - bg03.png
+Gli sfondi sono organizzati per sport e vengono mostrati dinamicamente nello Step 1 quando si seleziona uno sport.
 
-### Calcio
-- Champions League 1 - bg15.png
-- Champions League 2 - bg16.png
-- Champions League 3 - bg17.png
-- Generico 1 - bg18.png
-- Generico 2 - bg19.png
-- Calcio 1 - bg20.png
-- Calcio 2 - bg22.png
-- Calcio 3 - bg23.png
-- Calcio 4 - bg24.png
-- Calcio 5 - bg30.png
-- Calcio 6 - bg31.png
-- Calcio 7 - bg32.png
-- Calcio 8 - bg33.png
-- Calcio 9 - bg34.png
-- Calcio 10 - bg35.png
-- Calcio 11 - bg36.png
-- Calcio 12 - bg37.png
-- Calcio 13 - bg38.png
-- Calcio 14 - bg39.png
-- Calcio 15 - bg40.png
-- Calcio 16 - bg41.png
+### Generico (22 sfondi)
+bg01, bg02, bg03, bg06, bg08, bg09, bg10, bg11, bg12, bg13, bg19, bg20, bg25, bg27, bg34, bg35, bg36, bg37, bg38, bg39, bg40, bg41
 
-### Tennis
-- Wimbledon - bg11.png
-- US Open - bg12.png
+### Calcio (21 sfondi)
+- Champions League: bg15, bg16, bg17
+- Calcio: bg18, bg19, bg20, bg22, bg23, bg24, bg30, bg31, bg32, bg33, bg34, bg35, bg36, bg37, bg38, bg39, bg40, bg41
 
-### Pallavolo/Volley
-- Volley 1 - bg06.png
-- Volley 2 - bg07.png
-- Volley 3 - bg08.png
-- Volley 4 - bg09.png
-- Volley 5 - bg10.png
+### Tennis (8 sfondi)
+bg09, bg10, bg11 (Wimbledon), bg12 (US Open), bg42, bg43, bg44, bg45 (Australian Open)
 
-### Ciclismo
-- Ciclismo - bg14.png
+### Pallavolo/Volley (7 sfondi)
+bg06, bg07, bg08, bg09, bg10, bg46, bg47
 
-### Golf
-- Golf 1 - bg21.png
-- Golf 2 - bg13.png
+### Ciclismo (1 sfondo)
+bg14
 
-### Formula 1/Moto GP
-- F1/MotoGP 1 - bg25.png
-- F1/MotoGP 2 - bg26.png
-- F1/MotoGP 3 - bg27.png
-- F1/MotoGP 4 - bg28.png
-- F1/MotoGP 5 - bg29.png
+### Golf (2 sfondi)
+bg19, bg20
+
+### Formula 1/Moto GP (5 sfondi)
+bg25, bg26, bg27, bg28, bg29
 
 ## 🎨 Template 1920x1080 "Full HD Banner"
 
