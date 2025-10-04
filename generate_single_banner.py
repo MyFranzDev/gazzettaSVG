@@ -28,6 +28,32 @@ def generate_banner(data_json):
     template_file = f"templates/{data['template']}.json"
     template = load_template(template_file)
 
+    # Load logo images as base64
+    logo_small_dark = None
+    logo_large_dark = None
+    user_image = None
+
+    if data.get('logo_small_dark'):
+        try:
+            with open(data['logo_small_dark'], 'rb') as f:
+                logo_small_dark = f'data:image/png;base64,{base64.b64encode(f.read()).decode("utf-8")}'
+        except FileNotFoundError:
+            pass
+
+    if data.get('logo_large_dark'):
+        try:
+            with open(data['logo_large_dark'], 'rb') as f:
+                logo_large_dark = f'data:image/png;base64,{base64.b64encode(f.read()).decode("utf-8")}'
+        except FileNotFoundError:
+            pass
+
+    if data.get('user_image'):
+        try:
+            with open(data['user_image'], 'rb') as f:
+                user_image = f'data:image/png;base64,{base64.b64encode(f.read()).decode("utf-8")}'
+        except FileNotFoundError:
+            pass
+
     # Set content data
     engine.set_content_data({
         'header_text': data.get('header_text', ''),
@@ -37,10 +63,9 @@ def generate_banner(data_json):
         'price': data.get('price', ''),
         'price_period': data.get('price_period', ''),
         'header_title_combined': f"{data.get('header_text', '')} | {data.get('main_title', '')}",
-        # Logos will be added from uploaded files
-        'logo_small_dark': data.get('logo_small_dark'),
-        'logo_large_dark': data.get('logo_large_dark'),
-        'user_image': data.get('user_image')
+        'logo_small_dark': logo_small_dark,
+        'logo_large_dark': logo_large_dark,
+        'user_image': user_image
     })
 
     # Set background

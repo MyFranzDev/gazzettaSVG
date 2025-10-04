@@ -58,7 +58,10 @@ try {
         'cta_text' => $cta_text,
         'price' => $price,
         'price_period' => $price_period,
-        'background' => $background ?: ($wizardData['background'] ?? 'bg01')
+        'background' => $background ?: ($wizardData['background'] ?? 'bg01'),
+        'logo_small_dark' => 'web/frontend/logos/G_bianco.png',
+        'logo_large_dark' => 'web/frontend/logos/logo_gazzetta_bianco.png',
+        'user_image' => null
     ];
 
     // Generate banner

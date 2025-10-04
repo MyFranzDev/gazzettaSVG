@@ -45,7 +45,10 @@ function generateBanners($wizardData) {
                 'cta_text' => $wizardData['cta'] ?? 'ISCRIVITI',
                 'price' => $wizardData['prezzo'] ?? '0,99€',
                 'price_period' => $wizardData['periodicita'] ?? '',
-                'background' => $wizardData['background'] ?? 'bg01'
+                'background' => $wizardData['background'] ?? 'bg01',
+                'logo_small_dark' => 'web/frontend/logos/G_bianco.png',
+                'logo_large_dark' => 'web/frontend/logos/logo_gazzetta_bianco.png',
+                'user_image' => null  // TODO: handle uploaded images
             ];
 
             // Save template data to temp JSON file
