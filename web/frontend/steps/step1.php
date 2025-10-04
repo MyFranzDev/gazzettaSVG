@@ -33,35 +33,6 @@
         </div>
 
         <div class="form-group">
-            <label>Stile Grafico *</label>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px;">
-                <?php
-                $selectedStyle = $wizardData['style'] ?? 'style1';
-                ?>
-                <label class="style-card <?= $selectedStyle === 'style1' ? 'selected' : '' ?>" style="border: 2px solid #e0e0e0; border-radius: 8px; padding: 20px; cursor: pointer; transition: all 0.3s ease;">
-                    <input type="radio" name="data[style]" value="style1" <?= $selectedStyle === 'style1' ? 'checked' : '' ?> style="display: none;">
-                    <div style="background: linear-gradient(135deg, #0f364c 0%, #1a4f6b 100%); padding: 30px; border-radius: 6px; margin-bottom: 12px; position: relative; overflow: hidden;">
-                        <div style="position: absolute; top: 10px; right: 10px; width: 40px; height: 40px; background: rgba(255, 215, 0, 0.2); border-radius: 50%;"></div>
-                        <div style="color: #FFD700; font-size: 11px; font-weight: bold; margin-bottom: 8px;">EVENTO</div>
-                        <div style="color: white; font-size: 16px; font-weight: bold; margin-bottom: 4px;">Titolo Banner</div>
-                        <div style="color: rgba(255,255,255,0.8); font-size: 10px;">Sottotitolo esempio</div>
-                    </div>
-                    <div style="text-align: center; font-weight: 500; color: #333;">Stile 1</div>
-                </label>
-
-                <label class="style-card <?= $selectedStyle === 'style2' ? 'selected' : '' ?>" style="border: 2px solid #e0e0e0; border-radius: 8px; padding: 20px; cursor: pointer; transition: all 0.3s ease;">
-                    <input type="radio" name="data[style]" value="style2" <?= $selectedStyle === 'style2' ? 'checked' : '' ?> style="display: none;">
-                    <div style="background: white; border: 2px solid #0f364c; padding: 30px; border-radius: 6px; margin-bottom: 12px; position: relative;">
-                        <div style="position: absolute; top: -10px; left: 20px; background: #FFD700; color: #0f364c; padding: 4px 12px; font-size: 9px; font-weight: bold; border-radius: 4px;">EVENTO</div>
-                        <div style="color: #0f364c; font-size: 16px; font-weight: bold; margin-bottom: 4px; margin-top: 10px;">Titolo Banner</div>
-                        <div style="color: #666; font-size: 10px;">Sottotitolo esempio</div>
-                    </div>
-                    <div style="text-align: center; font-weight: 500; color: #333;">Stile 2</div>
-                </label>
-            </div>
-        </div>
-
-        <div class="form-group">
             <label>Sport *</label>
             <div class="sport-grid">
                 <?php
@@ -76,7 +47,7 @@
                 ];
 
                 foreach ($mockSports as $sport):
-                    $selected = ($wizardData['sport'] ?? '') === $sport;
+                    $selected = ($wizardData['sport'] ?? 'Calcio') === $sport;
                 ?>
                     <label class="sport-card <?= $selected ? 'selected' : '' ?>" data-sport="<?= htmlspecialchars($sport) ?>">
                         <input type="radio" name="data[sport]" value="<?= htmlspecialchars($sport) ?>"
@@ -89,14 +60,14 @@
         </div>
 
         <!-- Background Selection (shown after sport selection) -->
-        <div class="form-group" id="backgroundSection" style="margin-top: 30px; display: <?= isset($wizardData['sport']) ? 'block' : 'none' ?>;">
-            <label>Sfondo per <span id="selectedSportName"><?= htmlspecialchars($wizardData['sport'] ?? 'Generico') ?></span> *</label>
+        <div class="form-group" id="backgroundSection" style="margin-top: 30px; display: block;">
+            <label>Sfondo per <span id="selectedSportName"><?= htmlspecialchars($wizardData['sport'] ?? 'Calcio') ?></span> *</label>
             <div class="background-grid" id="backgroundGrid">
                 <?php
-                $selectedSport = $wizardData['sport'] ?? 'Generico';
+                $selectedSport = $wizardData['sport'] ?? 'Calcio';
                 $sportBackgrounds = $mockBackgrounds[$selectedSport] ?? $mockBackgrounds['Generico'];
-                foreach ($sportBackgrounds as $bg):
-                    $selected = ($wizardData['background'] ?? '') === $bg['id'];
+                foreach ($sportBackgrounds as $i => $bg):
+                    $selected = isset($wizardData['background']) ? ($wizardData['background'] === $bg['id']) : ($i === 0);
                 ?>
                     <label class="background-card <?= $selected ? 'selected' : '' ?>">
                         <input type="radio" name="data[background]" value="<?= htmlspecialchars($bg['id']) ?>"
@@ -191,15 +162,6 @@ function updateBackgrounds(sport) {
     updateButtonState();
 }
 
-// Add click handler to style cards
-document.querySelectorAll('.style-card').forEach(card => {
-    card.addEventListener('click', function() {
-        document.querySelectorAll('.style-card').forEach(c => c.classList.remove('selected'));
-        this.classList.add('selected');
-        this.querySelector('input[type="radio"]').checked = true;
-    });
-});
-
 // Add click handler to sport cards
 document.querySelectorAll('.sport-card').forEach(card => {
     card.addEventListener('click', function() {
@@ -285,20 +247,18 @@ removeImage.addEventListener('click', (e) => {
     uploadArea.style.display = 'block';
 });
 
-// Initialize button state
+// Initialize button state and select first background if Calcio is default
 updateButtonState();
+
+// Auto-select first background for default sport (Calcio)
+const defaultSport = document.querySelector('input[name="data[sport]"]:checked');
+if (defaultSport && !document.querySelector('input[name="data[background]"]:checked')) {
+    const firstBackground = document.querySelector('.background-card input[type="radio"]');
+    if (firstBackground) {
+        firstBackground.checked = true;
+        firstBackground.closest('.background-card').classList.add('selected');
+        updateButtonState();
+    }
+}
 </script>
 
-<style>
-.style-card:hover {
-    border-color: #0f364c !important;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(15, 54, 76, 0.1);
-}
-
-.style-card.selected {
-    border-color: #FFD700 !important;
-    background: rgba(255, 215, 0, 0.05);
-    box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.2);
-}
-</style>

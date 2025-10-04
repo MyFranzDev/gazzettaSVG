@@ -21,6 +21,7 @@ if (!$input) {
 $template = $input['template'] ?? '';
 $header_text = $input['header_text'] ?? '';
 $main_title = $input['main_title'] ?? '';
+$description_text = $input['description_text'] ?? '';
 $cta_text = $input['cta_text'] ?? '';
 $price = $input['price'] ?? '';
 $price_period = $input['price_period'] ?? '';
@@ -54,7 +55,7 @@ try {
         'template' => $template,
         'header_text' => $header_text,
         'main_title' => $main_title,
-        'description_text' => $wizardData['subtitle'] ?? '',
+        'description_text' => $description_text,
         'cta_text' => $cta_text,
         'price' => $price,
         'price_period' => $price_period,

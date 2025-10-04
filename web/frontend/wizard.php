@@ -113,6 +113,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_POST['data'] ?? []
         );
 
+        // If moving from step 2 to 3, generate text variants with OpenAI
+        if ($currentStep == 2 && !isset($_SESSION['wizard']['text_variants'])) {
+            $wizardData = $_SESSION['wizard']['data']; // Update with new data
+            $evento = $wizardData['evento'] ?? 'Evento sportivo';
+
+            // Call Python script to generate texts
+            $baseDir = __DIR__ . '/../..';
+            $pythonScript = $baseDir . '/generate_texts.py';
+            $command = "cd " . escapeshellarg($baseDir) . " && python3 " . escapeshellarg($pythonScript) . " " . escapeshellarg($evento) . " 2>&1";
+
+            exec($command, $output, $returnCode);
+
+            if ($returnCode === 0) {
+                $jsonOutput = implode("\n", $output);
+                $variants = json_decode($jsonOutput, true);
+
+                if ($variants && json_last_error() === JSON_ERROR_NONE) {
+                    $_SESSION['wizard']['text_variants'] = $variants;
+                }
+            }
+        }
+
         // If moving from step 4 to 5, generate banners
         if ($currentStep == 4) {
             // Generate banners by calling Python script
@@ -273,9 +295,12 @@ $mockTemplates = [
     <div class="wizard-container">
         <!-- Header -->
         <div class="wizard-header">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-                <h1 style="margin: 0;">🏆 Gazzetta Multi-Banner Generator</h1>
-                <a href="logout.php" style="font-size: 12px; color: rgba(255,255,255,0.5); text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='rgba(255,255,255,1)'" onmouseout="this.style.color='rgba(255,255,255,0.5)'">
+            <div style="position: relative; margin-bottom: 30px;">
+                <h1 style="margin: 0; text-align: center;">
+                    G+ Multi-Banner Generator Model
+                    <span style="font-size: 14px; font-weight: normal; opacity: 0.7; margin-left: 8px;">by Newrality</span>
+                </h1>
+                <a href="logout.php" style="position: absolute; top: 0; right: 0; font-size: 12px; color: rgba(255,255,255,0.5); text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='rgba(255,255,255,1)'" onmouseout="this.style.color='rgba(255,255,255,0.5)'">
                     Esci
                 </a>
             </div>

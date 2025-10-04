@@ -31,7 +31,7 @@ body::before {
 .wizard-container {
     max-width: 1000px;
     margin: 0 auto;
-    background: rgba(255, 255, 255, 0.98);
+    background: transparent;
     border-radius: 12px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     position: relative;
@@ -41,7 +41,7 @@ body::before {
 
 /* Header */
 .wizard-header {
-    background: linear-gradient(135deg, #0f364c, #1a4f6b);
+    background: rgba(10, 20, 40, 0.7);
     color: white;
     padding: 30px;
     text-align: center;
@@ -133,6 +133,7 @@ button.step-number:hover {
 .wizard-content {
     padding: 40px;
     min-height: 400px;
+    background: rgba(255, 255, 255, 0.98);
 }
 
 .step-container {
