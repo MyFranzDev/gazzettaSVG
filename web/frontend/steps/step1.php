@@ -108,6 +108,24 @@
             </div>
         </div>
 
+        <!-- Image Upload (Optional) -->
+        <div class="form-group" style="margin-top: 30px;">
+            <label>📱 Immagine nello smartphone / immagine libera (opzionale)</label>
+            <div class="upload-area" id="uploadArea">
+                <input type="file" id="imageUpload" name="image" accept="image/*" style="display: none;">
+                <div class="upload-icon">📱</div>
+                <div class="upload-text">Clicca per caricare o trascina un'immagine qui</div>
+                <div class="upload-hint">JPG, PNG - Max 5MB</div>
+            </div>
+            <div id="imagePreview" style="margin-top: 15px; display: none;">
+                <img id="previewImg" style="max-width: 200px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <p style="margin-top: 10px; font-size: 14px; color: #666;">
+                    <span id="fileName"></span> -
+                    <a href="#" id="removeImage" style="color: #f44336;">Rimuovi</a>
+                </p>
+            </div>
+        </div>
+
         <div class="wizard-actions">
             <div></div>
             <button type="submit" name="action" value="next" class="btn btn-primary" id="nextBtn" disabled>
@@ -202,6 +220,69 @@ document.querySelectorAll('.background-card').forEach(card => {
         this.querySelector('input[type="radio"]').checked = true;
         updateButtonState();
     });
+});
+
+// Image upload handlers
+const uploadArea = document.getElementById('uploadArea');
+const imageUpload = document.getElementById('imageUpload');
+const imagePreview = document.getElementById('imagePreview');
+const previewImg = document.getElementById('previewImg');
+const fileName = document.getElementById('fileName');
+const removeImage = document.getElementById('removeImage');
+
+// Click to upload
+uploadArea.addEventListener('click', () => imageUpload.click());
+
+// Drag and drop
+uploadArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadArea.classList.add('dragover');
+});
+
+uploadArea.addEventListener('dragleave', () => {
+    uploadArea.classList.remove('dragover');
+});
+
+uploadArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadArea.classList.remove('dragover');
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+        imageUpload.files = files;
+        handleImageUpload(files[0]);
+    }
+});
+
+// File input change
+imageUpload.addEventListener('change', (e) => {
+    if (e.target.files.length > 0) {
+        handleImageUpload(e.target.files[0]);
+    }
+});
+
+// Handle image upload
+function handleImageUpload(file) {
+    if (!file.type.startsWith('image/')) {
+        alert('Per favore carica un\'immagine valida');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        previewImg.src = e.target.result;
+        fileName.textContent = file.name;
+        imagePreview.style.display = 'block';
+        uploadArea.style.display = 'none';
+    };
+    reader.readAsDataURL(file);
+}
+
+// Remove image
+removeImage.addEventListener('click', (e) => {
+    e.preventDefault();
+    imageUpload.value = '';
+    imagePreview.style.display = 'none';
+    uploadArea.style.display = 'block';
 });
 
 // Initialize button state
