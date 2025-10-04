@@ -185,7 +185,7 @@ class TemplateEngine:
         return '\n'.join(parts)
 
     def _render_text_block(self, comp: Dict, canvas_width: int, canvas_height: int) -> str:
-        """Render text block with header and main text using HTML/CSS with word-wrap"""
+        """Render text block with header and main text using HTML/CSS with auto-fit"""
         geom = self._get_geometry(comp, canvas_width, canvas_height)
         style = comp.get("style", {})
 
@@ -209,6 +209,18 @@ class TemplateEngine:
         main_font_family = style.get("font_family", "Oswald Bold")
         main_font_size = style.get("font_size", 48)
 
+        # Quick estimate for scale factor
+        line_height = 1.2
+        estimated_height = 0
+        if header_text:
+            estimated_height += header_font_size * line_height
+        if main_text:
+            estimated_height += main_font_size * line_height
+        if header_text and main_text:
+            estimated_height += 10  # margin between
+
+        scale_factor = min(1.0, (geom["height"] * 0.95) / estimated_height) if estimated_height > geom["height"] else 1.0
+
         # Convert alignment to CSS
         text_align_css = alignment if alignment in ['left', 'right', 'center'] else 'center'
 
@@ -216,15 +228,22 @@ class TemplateEngine:
         parts = []
         parts.append(f'<foreignObject x="{geom["x"]}" y="{geom["y"]}" width="{geom["width"]}" height="{geom["height"]}">')
 
-        # Container div
+        # Outer container for centering
         align_items_css = {'left': 'flex-start', 'right': 'flex-end', 'center': 'center'}.get(alignment, 'center')
         parts.append('<div xmlns="http://www.w3.org/1999/xhtml" style="')
         parts.append('width: 100%; height: 100%;')
-        parts.append('display: flex; flex-direction: column;')
-        parts.append('justify-content: center;')
-        parts.append(f'align-items: {align_items_css};')
+        parts.append('display: flex; align-items: center;')
+        parts.append(f'justify-content: {align_items_css};')
         if bg_color:
             parts.append(f'background: {bg_color};')
+        parts.append('">')
+
+        # Inner container with scale and column layout
+        parts.append('<div style="')
+        parts.append('display: flex; flex-direction: column;')
+        parts.append(f'align-items: {align_items_css};')
+        parts.append(f'transform: scale({scale_factor});')
+        parts.append('transform-origin: center;')
         parts.append('">')
 
         # Header
@@ -235,7 +254,7 @@ class TemplateEngine:
             parts.append(f'font-size: {header_font_size}px;')
             parts.append(f'text-align: {text_align_css};')
             parts.append('word-wrap: break-word;')
-            parts.append('width: 100%;')
+            parts.append(f'max-width: {geom["width"]}px;')
             parts.append('line-height: 1.2;')
             parts.append('">' + header_text + '</div>')
 
@@ -247,19 +266,20 @@ class TemplateEngine:
             parts.append(f'font-size: {main_font_size}px;')
             parts.append(f'text-align: {text_align_css};')
             parts.append('word-wrap: break-word;')
-            parts.append('width: 100%;')
+            parts.append(f'max-width: {geom["width"]}px;')
             parts.append('line-height: 1.2;')
             if header_text:
                 parts.append('margin-top: 10px;')
             parts.append('">' + main_text + '</div>')
 
-        parts.append('</div>')
+        parts.append('</div>')  # Close inner
+        parts.append('</div>')  # Close outer
         parts.append('</foreignObject>')
 
         return '\n'.join(parts)
 
     def _render_text_only(self, comp: Dict, canvas_width: int, canvas_height: int) -> str:
-        """Render text with automatic word-wrap and auto-fit using HTML/CSS"""
+        """Render text with automatic word-wrap in fixed container"""
         geom = self._get_geometry(comp, canvas_width, canvas_height)
         style = comp.get("style", {})
         content_source = comp.get("content_source", "")
@@ -276,42 +296,27 @@ class TemplateEngine:
         # Convert alignment to CSS
         text_align_css = alignment if alignment in ['left', 'right', 'center'] else 'center'
 
-        # Use foreignObject with HTML/CSS - browser handles wrapping and we use CSS zoom/scale
+        # Use foreignObject with fixed dimensions
         parts = []
         parts.append(f'<foreignObject x="{geom["x"]}" y="{geom["y"]}" width="{geom["width"]}" height="{geom["height"]}">')
 
-        # Container that will auto-scale content to fit
-        parts.append('<div xmlns="http://www.w3.org/1999/xhtml" style="')
-        parts.append('width: 100%;')
-        parts.append('height: 100%;')
+        # Single container with all styling - fixed size, overflow hidden
+        parts.append(f'<div xmlns="http://www.w3.org/1999/xhtml" style="')
+        parts.append(f'width: {geom["width"]}px;')
+        parts.append(f'height: {geom["height"]}px;')
+        parts.append('box-sizing: border-box;')
         parts.append('display: flex;')
         parts.append('align-items: center;')
         parts.append(f'justify-content: {text_align_css};')
-        parts.append('position: relative;')
-        parts.append('">')
-
-        # Inner text that will be measured and scaled by browser
-        # Use max-width and max-height with object-fit concept
-        parts.append('<div style="')
+        parts.append('overflow: hidden;')
         parts.append(f'color: {text_color};')
         parts.append(f'font-family: \'{font_family}\';')
         parts.append(f'font-size: {font_size}px;')
         parts.append(f'text-align: {text_align_css};')
         parts.append('word-wrap: break-word;')
-        parts.append('overflow-wrap: break-word;')
-        parts.append(f'max-width: {geom["width"]}px;')
-        parts.append(f'max-height: {geom["height"]}px;')
         parts.append('line-height: 1.2;')
-        parts.append('width: fit-content;')
-        parts.append('height: fit-content;')
-        # CSS container queries would be ideal but not widely supported in SVG rendering
-        # Use viewport-based scaling as fallback
-        parts.append(f'font-size: min({font_size}px, {geom["height"] * 0.4}px);')
-        parts.append('">')
-        parts.append(text_content)
-        parts.append('</div>')
+        parts.append(f'">{text_content}</div>')
 
-        parts.append('</div>')
         parts.append('</foreignObject>')
 
         return '\n'.join(parts)
@@ -466,7 +471,7 @@ class TemplateEngine:
         return '\n'.join(parts)
 
     def _render_logo(self, comp: Dict, canvas_width: int, canvas_height: int) -> str:
-        """Render logo (user uploaded or default G+)"""
+        """Render logo (user uploaded or default G+) with optional color overlay"""
         geom = self._get_geometry(comp, canvas_width, canvas_height)
         style = comp.get("style", {})
         content_source = comp.get("content_source", "")
@@ -475,22 +480,31 @@ class TemplateEngine:
 
         # Check if user provided a logo image
         logo_image = self._get_content(content_source) if content_source else None
+        logo_color = style.get("logo_color", None)
 
         if logo_image:
-            # User uploaded logo
+            # User uploaded logo - use foreignObject for CSS filter support
             bg_color = style.get("background", "#FFFFFF")
-
-            # Background
-            parts.append(f'<rect x="{geom["x"]}" y="{geom["y"]}" width="{geom["width"]}" height="{geom["height"]}" fill="{bg_color}"/>')
-
-            # Logo image (centered, with padding)
             padding = style.get("padding", 10)
-            img_x = geom["x"] + padding
-            img_y = geom["y"] + padding
-            img_w = geom["width"] - padding * 2
-            img_h = geom["height"] - padding * 2
 
-            parts.append(f'<image href="{logo_image}" x="{img_x}" y="{img_y}" width="{img_w}" height="{img_h}" preserveAspectRatio="xMidYMid meet"/>')
+            parts.append(f'<rect x="{geom["x"]}" y="{geom["y"]}" width="{geom["width"]}" height="{geom["height"]}" fill="{bg_color}"/>')
+            parts.append(f'<foreignObject x="{geom["x"]}" y="{geom["y"]}" width="{geom["width"]}" height="{geom["height"]}">')
+
+            parts.append('<div xmlns="http://www.w3.org/1999/xhtml" style="')
+            parts.append('width: 100%; height: 100%;')
+            parts.append('display: flex; justify-content: center; align-items: center;')
+            parts.append(f'padding: {padding}px;')
+            parts.append('box-sizing: border-box;')
+            parts.append('">')
+
+            # Apply CSS filter for color overlay if logo_color is specified
+            logo_filter = ''
+            if logo_color:
+                logo_filter = 'filter: brightness(0) saturate(100%) invert(48%) sepia(79%) saturate(2476%) hue-rotate(316deg) brightness(98%) contrast(119%);'
+
+            parts.append(f'<img src="{logo_image}" style="max-width: 100%; max-height: 100%; {logo_filter}" />')
+            parts.append('</div>')
+            parts.append('</foreignObject>')
         else:
             # Default G+ logo (fallback)
             bg_color = style.get("background", "#E4087C")

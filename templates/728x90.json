@@ -44,29 +44,25 @@
         "background": "transparent",
         "padding": 8,
         "font_size": 32,
-        "show_subtitle": true
+        "show_subtitle": true,
+        "logo_color": "#bb2b60"
       }
     },
     {
-      "id": "header_title_block",
-      "type": "text_block",
-      "header_source": "header_text",
+      "id": "header_title_text",
+      "type": "text_only",
       "content_source": "main_title",
       "geometry": {
         "x": 100,
         "y": 0,
-        "width": 270,
+        "width": 250,
         "height": 90
       },
       "style": {
         "text_color": "#FFFFFF",
         "font_family": "Oswald Bold",
-        "header_font_family": "Roboto Bold",
-        "header_font_size": 13,
-        "alignment": "left",
-        "auto_size": true,
-        "min_font_size": 20,
-        "max_font_size": 50
+        "font_size": 35,
+        "alignment": "right"
       }
     },
     {
